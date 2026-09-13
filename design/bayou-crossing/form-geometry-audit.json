@@ -106,7 +106,7 @@
     "Frog and vehicle instance heights adjusted to ground their contact surfaces.",
     "Blender-only production approved by user; no accepted Meshy task receipts exist."
   ],
-  "humanFormApproval": "pending",
+  "humanFormApproval": "user approved 2026-09-13T21:31:55.994686+00:00",
   "nativeSource": "meshes/bayou-world.blend",
   "proceduralNormalDetail": "Blender procedural micro-normal shading must be baked or recreated for runtime; it does not survive GLB automatically."
 }

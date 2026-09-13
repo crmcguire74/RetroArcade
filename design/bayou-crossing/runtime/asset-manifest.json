@@ -1,0 +1,115 @@
+{
+  "source": "Native Blender assets and environment",
+  "formApproval": {
+    "status": "approved",
+    "approvedBy": "user",
+    "approvedAt": "2026-09-13T21:31:55.994686+00:00",
+    "evidence": [
+      "form-review.html",
+      "form-geometry-audit.json",
+      "renders/production-view.png",
+      "renders/frog-eye.png",
+      "renders/cabinet.png",
+      "renders/asset-frog.png",
+      "renders/asset-truck.png",
+      "renders/asset-log.png",
+      "renders/asset-turtle.png"
+    ],
+    "strangestElement": "A frog-height road view intentionally makes nearby pickup trucks tower over the player; the elevated desktop view is the default for route readability.",
+    "notes": "User explicitly approved actual Blender models and environment for export and integration as the second playable arcade game."
+  },
+  "assets": [
+    {
+      "path": "public/assets/bayou/frog-high.glb",
+      "bytes": 1049388,
+      "sha256": "4c06d8699093076ffd7553ce7f86c2913efdf412d62411fafe08101330d1905b",
+      "triangles": 11316
+    },
+    {
+      "path": "public/assets/bayou/frog.glb",
+      "bytes": 905248,
+      "sha256": "dbcc1e430db002afeee60c895768bd5eaac74a6aa60027dcd6b3a7f7fa159e10",
+      "triangles": 5658
+    },
+    {
+      "path": "public/assets/bayou/frog-vlow.glb",
+      "bytes": 827928,
+      "sha256": "9c0f8c96c41ff23267762719d85c511f920935bbb7469df05beefb8e99aff579",
+      "triangles": 2828
+    },
+    {
+      "path": "public/assets/bayou/truck-high.glb",
+      "bytes": 658916,
+      "sha256": "249d2c8c52cbe897adaddb6c4230e6d4b21765e93c66eb48b495bd0115da7883",
+      "triangles": 6678
+    },
+    {
+      "path": "public/assets/bayou/truck.glb",
+      "bytes": 527792,
+      "sha256": "574cf48ecc7e26502dece896f9a310ff813e24c0b4314498c6d35e094b7b88eb",
+      "triangles": 3339
+    },
+    {
+      "path": "public/assets/bayou/truck-vlow.glb",
+      "bytes": 432144,
+      "sha256": "74a501741f300ea6808fec930eeead1ad0dde2bbc7348f41761c56986fd72edd",
+      "triangles": 1668
+    },
+    {
+      "path": "public/assets/bayou/log-high.glb",
+      "bytes": 1140048,
+      "sha256": "f4113f51db43bde143939d3c9dd307cd6f5170943ac91e32ec0c49d75380e8d7",
+      "triangles": 6164
+    },
+    {
+      "path": "public/assets/bayou/log.glb",
+      "bytes": 1041512,
+      "sha256": "4d3d6494842a2de34a20d4beea566a90dc33eeabc0137da14d9bb4104e40cc3e",
+      "triangles": 3082
+    },
+    {
+      "path": "public/assets/bayou/log-vlow.glb",
+      "bytes": 990552,
+      "sha256": "e8148a661eec0e2363ae5297af13ead2b834308f3d2bc217b333730b01482858",
+      "triangles": 1540
+    },
+    {
+      "path": "public/assets/bayou/turtle-high.glb",
+      "bytes": 748728,
+      "sha256": "684835d7a1d22bb50ede27fcefd4dcbb6d2ef19589394f681a1837b7f81da12b",
+      "triangles": 5516
+    },
+    {
+      "path": "public/assets/bayou/turtle.glb",
+      "bytes": 668808,
+      "sha256": "7b3dc10f3aaa3c252b4bbd5e0ac2c2bdc35e4cd58aadd1567d88253c0b3380b0",
+      "triangles": 2758
+    },
+    {
+      "path": "public/assets/bayou/turtle-vlow.glb",
+      "bytes": 627144,
+      "sha256": "215d7d56e3c9bb735cd113a6953ff5ab6dc83bf1f5935dfb7833d658b0b8e007",
+      "triangles": 1378
+    },
+    {
+      "path": "public/assets/bayou/world.glb",
+      "bytes": 8868348,
+      "sha256": "9eb584ed429795b4a3fe9cd51a26c0e7094373fd9e6da9d189a65377199782c2",
+      "triangles": 48104
+    },
+    {
+      "path": "public/assets/bayou/world-vlow.glb",
+      "bytes": 7910580,
+      "sha256": "8b29792367b5dba75e5aa919bb53b6e74a0400990166958753f0679169fe2e58",
+      "triangles": 30710
+    },
+    {
+      "path": "public/assets/bayou/cabinet.glb",
+      "bytes": 3696540,
+      "sha256": "237c21b1166f4e4e4f76f3edf2e0c79519508cf3e648a5418b8059a525d1322e",
+      "triangles": 15348
+    }
+  ],
+  "normals": "Procedural surface details baked by Blender into 1024px normal atlases",
+  "lighting": "lighting-fixtures.json; WebXR approximation requires browser verification"
+}

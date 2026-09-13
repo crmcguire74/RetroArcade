@@ -3,7 +3,7 @@
   "roomId": "bayou-crossing",
   "gates": {
     "function": true,
-    "form": false,
+    "form": true,
     "runtime": false
   },
   "formChecks": {
@@ -46,7 +46,7 @@
     "observations": [],
     "corrections": [],
     "remainingRisks": [
-      "Form approval and runtime verification pending.",
+      "Runtime integration and hardware verification pending.",
       "Blender MCP tools unavailable in this session.",
       "game-dev executable not installed or available on PATH.",
       "Bundled room validator requires a positive Meshy spend ceiling and accepted Meshy jobs, even for Blender-only authoring. Do not fabricate pricing or paid task receipts."
