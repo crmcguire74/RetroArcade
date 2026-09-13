@@ -2,119 +2,222 @@ import './style.css';
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
-import {VRButton} from 'three/addons/webxr/VRButton.js';
+import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
+import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
 import {EffectComposer} from 'three/addons/postprocessing/EffectComposer.js';
 import {RenderPass} from 'three/addons/postprocessing/RenderPass.js';
 import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
-import {formation,LEVEL_NAMES,reflectPaddle,readSave} from './rules.js';
-const $=s=>document.querySelector(s), clamp=THREE.MathUtils.clamp;
-const renderer=new THREE.WebGLRenderer({canvas:$('#world'),antialias:true,powerPreference:'high-performance'});
-renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.xr.enabled=true;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.85;
-const scene=new THREE.Scene();scene.background=new THREE.Color('#0b0715');scene.fog=new THREE.FogExp2('#0b0715',.035);
-const camera=new THREE.PerspectiveCamera(58,innerWidth/innerHeight,.05,100);const rig=new THREE.Group();scene.add(rig);rig.add(camera);
+import {Brickstorm,LEVEL_NAMES} from './engine.js';
+import {readSave} from './rules.js';
+
+const $ = s => document.querySelector(s);
+const renderer = new THREE.WebGLRenderer({canvas:$('#world'),antialias:true,powerPreference:'high-performance'});
+renderer.setSize(innerWidth,innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
+renderer.xr.enabled=true;
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.15;
+const scene=new THREE.Scene();
+scene.background=new THREE.Color('#080e16');
+scene.fog=new THREE.Fog('#080e16',16,50);
+const pmrem=new THREE.PMREMGenerator(renderer);
+const environment=pmrem.fromScene(new RoomEnvironment(),.05);
+scene.environment=environment.texture;scene.environmentIntensity=.35;
+const camera=new THREE.PerspectiveCamera(52,innerWidth/innerHeight,.05,100);
+const rig=new THREE.Group();rig.add(camera);scene.add(rig);
 const arcade=new THREE.Group(),arena=new THREE.Group();scene.add(arcade,arena);arena.visible=false;
-scene.add(new THREE.HemisphereLight(0x899de8,0x211024,.8));
-const composer=new EffectComposer(renderer);composer.addPass(new RenderPass(scene,camera));const bloom=new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),.2,.25,1.5);composer.addPass(bloom);composer.addPass(new OutputPass());
-function material(color,glow=0){return new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:glow,roughness:.35,metalness:.25})}
-function cube(parent,w,h,d,x,y,z,color,glow=0){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material(color,glow));m.position.set(x,y,z);parent.add(m);return m}
-function light(parent,color,power,x,y,z){const l=new THREE.PointLight(color,power,14,2);l.position.set(x,y,z);parent.add(l)}
-light(arcade,0x6655ff,100,0,3,1);light(arcade,0xff2589,90,-5,2,-3);light(arcade,0x35caff,100,4,2,-3);light(arcade,0xffa550,60,0,4,-7);
-const portal=new THREE.Group();arcade.add(portal);portal.position.set(0,1.54,-4.78);portal.visible=false;for(let r=0;r<4;r++)for(let c=0;c<7;c++){const piece=cube(portal,.095,.065,.08,(c-3)*.11,(r-1.5)*.08,-r*.025,[0x51e1ff,0x9370ff,0xff609d,0xffc271][r],.7)}
-let loaded=false;
-new GLTFLoader().load('/assets/arcade.glb',g=>{
- // Merge static Blender geometry by material to keep draw calls viable in VR.
- g.scene.updateMatrixWorld(true);const bins=new Map();g.scene.traverse(o=>{if(o.isMesh){const key=[o.material.color?.getHex(),o.material.emissive?.getHex(),o.material.emissiveIntensity,o.material.roughness,o.material.metalness].join(':');if(!bins.has(key))bins.set(key,{material:o.material,geo:[]});const geo=o.geometry.clone().applyMatrix4(o.matrixWorld);bins.get(key).geo.push(geo)}});
- for(const b of bins.values()){const geom=mergeGeometries(b.geo,false);if(geom)arcade.add(new THREE.Mesh(geom,b.material));b.geo.forEach(g=>g.dispose())}loaded=true;
-},undefined,e=>{console.error(e);toast('Arcade model could not load. Please reload.');});
-const texture=new THREE.TextureLoader().load('/assets/brickstorm.png');texture.colorSpace=THREE.SRGBColorSpace;
-function poster(x,y,z,w,h){const p=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:texture}));p.position.set(x,y,z);arcade.add(p);return p}
-poster(0,1.54,-4.81,.85,.64);poster(4.4,2.3,-7.82,1.55,2.3);poster(-4.4,2.3,-7.82,1.55,2.3);
-let save;try{save=readSave(localStorage)}catch{save=readSave({getItem:()=>null})}
-let state='lobby',level=0,score=0,lives=3,combo=0,bricksHit=0,launched=false,transition=0,roundWait=0,gameTime=0,powerTime=0,power='',twoPaddles=false,muted=true,audioContext,portalArmed=false,paused=false;
-const ball=cube(arena,.16,.16,.16,0,1.5,-1,0xb9ffff,5);ball.geometry.dispose();ball.geometry=new THREE.SphereGeometry(.085,16,12);
-const trail=[];for(let i=0;i<12;i++){const dot=new THREE.Mesh(new THREE.SphereGeometry(.065*(1-i/14),8,6),new THREE.MeshBasicMaterial({color:0x74dcff,transparent:true,opacity:(1-i/12)*.45}));arena.add(dot);trail.push(dot)}
-const velocity=new THREE.Vector3(),paddle=cube(arena,1,.5,.09,0,1.5,-.65,0x3cdbff,.9);paddle.material.transparent=true;paddle.material.opacity=.28;const paddleEdge=new THREE.LineSegments(new THREE.EdgesGeometry(paddle.geometry),new THREE.LineBasicMaterial({color:0x9df8ff}));paddle.add(paddleEdge);
-const paddle2=cube(arena,.8,.45,.09,1,1.5,-.65,0xff5fba,.9);paddle2.visible=false;
-const blocks=[],particles=[],bonuses=[];const colors=[0x55e8ff,0x7380ff,0xe660ef,0xff5686,0xffb54b];
-const grid=new THREE.GridHelper(40,60,0x713cb2,0x281e4c);grid.position.set(0,.1,-9);arena.add(grid);
-cube(arena,7,.2,11,0,-.05,-3.5,0x11142c);
-for(const x of [-3.1,3.1]){cube(arena,.035,5,.035,x,2.5,-7.4,0x6a64ff,3);cube(arena,.035,.035,8,x,.22,-3.4,0x496eff,3)}
-cube(arena,6.2,.035,.035,0,5,-7.4,0xe268ff,3);
-for(let i=0;i<8;i++){const ring=new THREE.Mesh(new THREE.TorusGeometry(4+i*.2,.025,6,80),material(0x483682,1));ring.position.set(0,2,-10-i*2);arena.add(ring)}
-light(arena,0x4677ff,140,0,4,-2);light(arena,0xff328f,100,0,3,-7);
-const starPos=[];for(let i=0;i<450;i++)starPos.push((Math.random()-.5)*60,Math.random()*25,-Math.random()*45-8);const starGeo=new THREE.BufferGeometry();starGeo.setAttribute('position',new THREE.Float32BufferAttribute(starPos,3));arena.add(new THREE.Points(starGeo,new THREE.PointsMaterial({color:0xb7b6ff,size:.04})));
-function label(parent,text,x,y,z,w=3,h=.7){const canvas=document.createElement('canvas');canvas.width=1024;canvas.height=256;const ctx=canvas.getContext('2d');const tex=new THREE.CanvasTexture(canvas);const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:tex,transparent:true}));m.position.set(x,y,z);parent.add(m);return {mesh:m,draw(t){ctx.clearRect(0,0,1024,256);ctx.fillStyle='#0c0a20';ctx.fillRect(0,0,1024,256);ctx.strokeStyle='#6650a0';ctx.strokeRect(3,3,1018,250);ctx.textAlign='center';ctx.fillStyle='#f0c48c';ctx.font='bold 48px monospace';t.split('\n').forEach((s,i)=>ctx.fillText(s,512,90+i*80));tex.needsUpdate=true}}}
-const arenaBoard=label(arena,'',0,4.4,-7.4,5,.95),arcadeBoard=label(arcade,'',2,2.5,4,2.5,.8);arcadeBoard.mesh.rotation.y=Math.PI;
-const entryLabel=label(arcade,'',0,2.65,-4.8,1.6,.4);entryLabel.draw('BRICKSTORM\nINSERT TOKEN');
-const trophy=new THREE.Group();arcade.add(trophy);trophy.position.set(-4,1.15,4);cube(trophy,.45,.12,.45,0,0,0,0xc99950);const gem=new THREE.Mesh(new THREE.IcosahedronGeometry(.25,0),material(0xffce79,1));gem.position.y=.4;trophy.add(gem);
-const token=new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,.012,24),material(0xffc766,1));token.rotation.x=Math.PI/2;token.position.set(.25,1.15,-4.55);arcade.add(token);
-function updateSave(){const best=save.scores[0]?.score||0;$('#best').textContent=String(best).padStart(6,'0');arcadeBoard.draw('PERSONAL BEST '+String(best).padStart(6,'0')+'\n'+save.tickets+' TICKETS');trophy.visible=save.trophy}
-updateSave();
-function persist(won){save.scores.push({score,level:level+1,date:new Date().toLocaleDateString(),won});save.scores.sort((a,b)=>b.score-a.score);save.scores=save.scores.slice(0,10);save.tickets+=Math.floor(score/100);save.trophy ||= won;try{localStorage.setItem('afterhours-v1',JSON.stringify(save))}catch{toast('Storage unavailable: scores last only this session.')}updateSave()}
-function toast(t){$('#toast').textContent=t;$('#toast').style.opacity=1;clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('#toast').style.opacity=0,3200)}
-function sound(freq=440,duration=.08){if(muted)return;audioContext ||= new (window.AudioContext||window.webkitAudioContext)();audioContext.resume();const o=audioContext.createOscillator(),g=audioContext.createGain();o.type='sine';o.frequency.setValueAtTime(freq,audioContext.currentTime);o.frequency.exponentialRampToValueAtTime(freq*.45,audioContext.currentTime+duration);g.gain.setValueAtTime(.055,audioContext.currentTime);g.gain.exponentialRampToValueAtTime(.001,audioContext.currentTime+duration);o.connect(g).connect(audioContext.destination);o.start();o.stop(audioContext.currentTime+duration)}
-function ui(){$('#leave').textContent=state==='arena'?'← Back to arcade':'← Back to lobby';const inGame=state!=='lobby';document.body.classList.toggle('playing',inGame);$('#hud').hidden=!inGame;$('#hint').hidden=!inGame;$('#mode').textContent=state==='arena'?'BRICKSTORM / '+String(level+1).padStart(2,'0'):'AFTER HOURS / 1987';$('#score').textContent=String(score).padStart(6,'0');$('#status').textContent=state==='arena'?`${LEVEL_NAMES[level]} · ${lives} lives · ${blocks.length} bricks${powerTime>0?' · '+power:''}`:'Explore the arcade · Your tokens are on the cabinet';$('#hint').textContent=state==='arena'?(launched?'Move pointer to aim · Break bottom supports for a cascade · P pause':'Click or press Space to serve · Move pointer to aim'):'WASD move · Drag to look · E insert token / enter · Esc lobby';arenaBoard.draw(`${String(score).padStart(6,'0')}   LEVEL ${level+1}/10   ♥ ${lives}\n${paused?'PAUSED':!launched?'TRIGGER / CLICK TO SERVE':powerTime>0?power.toUpperCase():LEVEL_NAMES[level].toUpperCase()}`)}
-function resetRig(x,y,z){rig.position.set(x,0,z);rig.rotation.set(0,0,0);camera.position.set(0,renderer.xr.isPresenting?0:y,0);camera.rotation.set(0,0,0)}
-function explore(){yaw=0;pitch=0;controllers.forEach(c=>c.userData.ray.visible=true);if(!loaded){toast('The arcade is still loading…');return}state='arcade';arcade.visible=true;arena.visible=false;resetRig(0,1.65,1.5);ui()}
-function beginPortal(){if(!loaded){toast('The arcade is still loading…');return}if(state==='portal'||state==='arena')return;state='portal';portalArmed=false;transition=1.8;portal.visible=true;portal.scale.setScalar(1);document.body.classList.add('playing');$('#hud').hidden=true;$('#hint').hidden=true;sound(160,.6)}
-function clearObjects(arr){for(const o of arr){arena.remove(o);o.geometry?.dispose();o.material?.dispose()}arr.length=0}
-function buildLevel(){clearObjects(blocks);clearObjects(bonuses);for(const b of formation(level)){const m=cube(arena,.55,.44,.4,b.x,b.y,b.z,colors[b.row],.55);m.userData={...b};blocks.push(m)}launched=false;powerTime=0;power='';paddle.scale.set(1,1,1);roundWait=0;pointer.x=0;pointer.y=1.7;ui()}
-function start(){portal.visible=false;portal.position.set(0,1.54,-4.78);state='arena';arcade.visible=false;arena.visible=true;resetRig(0,1.9,renderer.xr.isPresenting?0:2.2);score=0;level=0;lives=3;combo=0;bricksHit=0;gameTime=0;paused=false;clearObjects(particles);clearObjects(bonuses);buildLevel();toast('BRICKSTORM · Ten levels. One more try.')}
-function serve(){if(state!=='arena'||roundWait>0||paused||launched)return;launched=true;velocity.set(.12,.08,-1).normalize().multiplyScalar(4.5+level*.25);sound(600);ui()}
-function finish(won){persist(won);state='arcade';arena.visible=false;arcade.visible=true;resetRig(-3,1.7,6);camera.lookAt(-4,1.5,4);ui();toast(won?'ALL TEN CLEARED · Your trophy is at the prize counter!':`RUN COMPLETE · ${score} points · ${Math.floor(score/100)} tickets`);if(!renderer.xr.isPresenting)showDialog(`<h2>${won?'You broke the storm.':'One more quarter?'}</h2><p>${score.toLocaleString()} points · Level ${level+1} · ${Math.floor(score/100)} tickets earned.</p><p>${won?'Your trophy is waiting at the prize counter.':'Your score is saved on this device. The arcade is still yours.'}</p><button id="again" class="primary">Play again ↗</button>`),$('#again').onclick=()=>{$('#dialog').close();beginPortal()}}
-function burst(pos,color,count=12,slow=false){for(let i=0;i<count;i++){const m=cube(arena,.08+Math.random()*.1,.08,.08,pos.x,pos.y,pos.z,color,2);m.userData={v:new THREE.Vector3((Math.random()-.5)*3,Math.random()*3,(Math.random()-.5)*3),life:slow?3: .65,slow};particles.push(m)}}
-function destroy(b){burst(b.position,b.material.color);arena.remove(b);blocks.splice(blocks.indexOf(b),1);b.geometry.dispose();b.material.dispose();score+=100+Math.min(combo,10)*20;combo++;bricksHit++;sound(300+combo*35);if(bricksHit%5===0){const bonus=cube(arena,.3,.3,.3,b.position.x,b.position.y,b.position.z,0xffdc80,2);bonus.userData.kind=['WIDE PADDLE','SLOW BALL','EXTRA LIFE'][Math.floor(bricksHit/5)%3];bonuses.push(bonus)}if(blocks.length>0&&!blocks.some(m=>m.userData.row===0)){for(const remaining of blocks){burst(remaining.position,remaining.material.color,4,true);score+=100;}clearObjects(blocks)}if(blocks.length===0){roundWait=3;launched=false;score+=1000*(level+1);for(let i=0;i<30;i++)burst(new THREE.Vector3((Math.random()-.5)*5,3+Math.random(),-6),colors[i%5],2,true);sound(900,.8);toast('FORMATION CLEARED · '+LEVEL_NAMES[level]);}ui()}
-// XR paddles and physical coin insertion. Grip a token, carry it to the slot, then lean into the CRT.
-const controllers=[];const worldPos=new THREE.Vector3(),prevPos=new THREE.Vector3(),quat=new THREE.Quaternion();
-for(let i=0;i<2;i++){const c=renderer.xr.getController(i);rig.add(c);controllers.push(c);const ray=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3(0,0,-1)]),new THREE.LineBasicMaterial({color:0x9feaff,transparent:true,opacity:.5}));ray.scale.z=2;c.add(ray);c.userData.ray=ray;c.addEventListener('selectstart',()=>{if(state==='arena'){if(paused){paused=false;ui()}else serve()}else if(state==='arcade'){c.getWorldPosition(worldPos);if(worldPos.distanceTo(new THREE.Vector3(-.2,1.25,-4.62))<.35){portalArmed=true;entryLabel.draw('TOKEN ACCEPTED\nLEAN CLOSER');sound(800)}}});c.addEventListener('squeezestart',()=>{if(state==='arcade'&&!token.userData.held){c.getWorldPosition(worldPos);token.getWorldPosition(prevPos);if(worldPos.distanceTo(prevPos)<.4){c.attach(token);token.position.set(0,-.025,-.06);token.userData.held=true;sound(700)}}});c.addEventListener('squeezeend',()=>{if(token.parent===c){arcade.attach(token);token.userData.held=false;token.position.set(.25,1.15,-4.55)}})}
-const vrButton=VRButton.createButton(renderer);vrButton.style.display='none';document.body.append(vrButton);
-$('#vr').onclick=async()=>{if(!navigator.xr||!await navigator.xr.isSessionSupported('immersive-vr')){showDialog('<h2>Your portal to VR</h2><p>Open this experience in a WebXR browser on your VR headset using HTTPS. Then select Enter in VR.</p><p>You can play the entire game here with a mouse or touch.</p>');return}explore();vrButton.click()};
-renderer.xr.addEventListener('sessionstart',()=>{explore();resetRig(0,0,-3.3);toast('Grip the gold token and place it in the cabinet slot.');});renderer.xr.addEventListener('sessionend',()=>{if(state==='arena')paused=true;camera.position.set(0,1.9,0);ui()});
-const pointer={x:0,y:1.7},keys=new Set();let dragging=false,lastX=0,lastY=0,yaw=0,pitch=0;
-window.addEventListener('keydown',e=>{if($('#dialog').open)return;keys.add(e.code);if(['Space','ArrowUp','ArrowDown'].includes(e.code))e.preventDefault();if(e.code==='Space')serve();if(e.code==='KeyE'&&state==='arcade'){if(rig.position.distanceTo(new THREE.Vector3(0,0,-3.5))<2){beginPortal()}else toast('Walk to the center Brickstorm cabinet.')}if(e.code==='KeyP'&&state==='arena'){paused=!paused;ui();toast(paused?'PAUSED':'RESUMED')}if(e.code==='Escape')back()});window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>{keys.clear();if(state==='arena'){paused=true;ui()}});
-$('#world').addEventListener('pointerdown',e=>{if(state==='arena')serve();dragging=true;lastX=e.clientX;lastY=e.clientY;$('#world').setPointerCapture(e.pointerId)});window.addEventListener('pointerup',()=>dragging=false);window.addEventListener('pointermove',e=>{pointer.x=(e.clientX/innerWidth-.5)*6;pointer.y=(1-e.clientY/innerHeight)*4.5+.3;if(dragging&&state==='arcade'){yaw-=(e.clientX-lastX)*.004;pitch=clamp(pitch-(e.clientY-lastY)*.003,-.6,.6);camera.rotation.set(pitch,yaw,0,'YXZ')}lastX=e.clientX;lastY=e.clientY});$('#world').style.touchAction='none';
-function back(){if(state==='portal')return;if(state==='arena'){if(score>0)persist(false);paused=false;clearObjects(bonuses);explore()}else{state='lobby';ui()}}
-$('#leave').onclick=back;$('#play').onclick=beginPortal;$('#explore').onclick=explore;$('#nav-arcade').onclick=()=>{state='lobby';ui()};$('#audio').onclick=()=>{muted=!muted;$('#audio').textContent=muted?'SOUND OFF':'SOUND ON';sound(550)};
-function showDialog(html){$('#dialog-content').innerHTML=html;$('#dialog').showModal()}
-$('#close').onclick=()=>$('#dialog').close();$('#scores').onclick=()=>showDialog(`<h2>The night’s legends.</h2><p>Personal scores saved on this browser · ${save.tickets} tickets</p>${save.scores.length?'<table><tr><td>RANK</td><td>SCORE</td><td>LEVEL</td></tr>'+save.scores.map((s,i)=>`<tr><td>${String(i+1).padStart(2,'0')}</td><td>${String(s.score).padStart(6,'0')}</td><td>${s.level}/10 ${s.won?'★':''}</td></tr>`).join('')+'</table>':'<p>No scores yet. The first spot is yours to claim.</p>'}`);
-$('#help').onclick=()=>{showDialog('<h2>Leave reality at the door.</h2><p><b>Arcade:</b> WASD to walk, drag to look. Approach the center cabinet and press E. Or choose the Brickstorm card to jump straight in.</p><p><b>Brickstorm:</b> Move your mouse or finger to position the paddle. Click / Space to launch. Hit near the edges to angle shots. Clear all ten formations with three lives. Clear the lowest support row to collapse the remaining formation in slow motion. Catch gold bonuses for a wider paddle, slow ball, or extra life. P pauses; Esc returns.</p><p><b>VR:</b> Grip the token on the control deck, bring it to the gold coin slot, and lean toward the screen. Trigger serves. Move and tilt your controller paddle. Left stick moves in the arcade; right stick snap-turns. Hold both triggers for 2 seconds to return.</p><label><input type="checkbox" id="two"> Enable two-paddle VR play</label><p>Scores and trophies are stored on this device. VR needs a compatible headset browser and HTTPS.</p>');$('#two').checked=twoPaddles;$('#two').onchange=e=>twoPaddles=e.target.checked};
-function physics(dt){
- if(!launched){ball.position.copy(paddle.position).add(new THREE.Vector3(0,0,-.18));return}
- const steps=Math.ceil(dt/.006);for(let s=0;s<steps;s++){const h=dt/steps,previous=ball.position.clone();ball.position.addScaledVector(velocity,h);
- if(Math.abs(ball.position.x)>3){ball.position.x=clamp(ball.position.x,-3,3);velocity.x*=-1;sound(180)}
- if(ball.position.y<.3||ball.position.y>4.9){ball.position.y=clamp(ball.position.y,.3,4.9);velocity.y*=-1}
- if(ball.position.z< -7.3){ball.position.z=-7.3;velocity.z=Math.abs(velocity.z)}
- for(const p of [paddle,...(paddle2.visible?[paddle2]:[])]){
- const local=p.worldToLocal(ball.position.clone()),before=p.worldToLocal(previous.clone());
- if(before.z<-.04&&local.z>=-.1&&Math.abs(local.x)<.58&&Math.abs(local.y)<.34){const speed=4.5+level*.25;const v=reflectPaddle(velocity.x/speed,velocity.y/speed,velocity.z/speed,local.x*1.8,local.y*2.5,powerTime>0&&power==='SLOW BALL'?speed*.65:speed);velocity.set(v.x,v.y,v.z).applyQuaternion(p.getWorldQuaternion(quat));if(velocity.z>-.7)velocity.z=-Math.max(1,Math.abs(velocity.z));ball.position.copy(p.localToWorld(new THREE.Vector3(local.x,local.y,-.18)));combo=0;sound(500)}
+scene.add(new THREE.HemisphereLight(0x9baec2,0x101820,.6));
+function areaLight(parent,color,intensity,x,y,z){const l=new THREE.PointLight(color,intensity,14,2);l.position.set(x,y,z);parent.add(l);return l}
+areaLight(arcade,0x78d4dd,35,0,2.6,0);
+areaLight(arcade,0xffc184,45,-3,3.5,-1);
+areaLight(arcade,0x94cadc,45,3,3,-2);
+areaLight(arcade,0xf6b16a,50,0,3.8,-4.7);
+areaLight(arena,0x85dfe5,75,0,4,-3);
+areaLight(arena,0xffb774,70,-4,4,1);
+areaLight(arena,0x697dbf,70,4,3,-6);
+const spot=new THREE.SpotLight(0xb7e4ef,110,18,Math.PI/4,.65,1.5);
+spot.position.set(2,5,2);spot.target.position.set(0,0,-3);spot.castShadow=true;spot.shadow.mapSize.set(1024,1024);spot.shadow.bias=-.0008;arcade.add(spot,spot.target);
+const composer=new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene,camera));
+composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),.22,.35,1.8));
+composer.addPass(new OutputPass());
+const textureLoader=new THREE.TextureLoader();
+const nebula=textureLoader.load('/assets/arena-nebula.png');nebula.colorSpace=THREE.SRGBColorSpace;
+const backdrop=new THREE.Mesh(new THREE.PlaneGeometry(72,48),new THREE.MeshBasicMaterial({map:nebula,color:0xb4bccc,fog:false}));
+backdrop.position.set(0,11,-32);arena.add(backdrop);
+// Actual Blender GLBs: retain material identity including the embedded artwork textures.
+const loader=new GLTFLoader();
+let ready=false,brickAsset=null;
+const assetReport=[];
+async function loadModel(path,parent){
+ const gltf=await loader.loadAsync(path);gltf.scene.updateMatrixWorld(true);
+ const bins=new Map();let meshes=0,triangles=0;
+ gltf.scene.traverse(o=>{if(o.isMesh){meshes++;triangles+=(o.geometry.index?.count||o.geometry.attributes.position.count)/3;const key=o.material.uuid;if(!bins.has(key))bins.set(key,{material:o.material,geometries:[]});const g=o.geometry.clone().applyMatrix4(o.matrixWorld);if(!g.attributes.uv)g.setAttribute('uv',new THREE.BufferAttribute(new Float32Array(g.attributes.position.count*2),2));bins.get(key).geometries.push(g);o.material.envMapIntensity=.45;}});
+ if(parent)for(const {material,geometries} of bins.values()){
+  const geometry=mergeGeometries(geometries,false);
+  if(!geometry)throw new Error('Cannot combine model geometry: '+path);
+  const mesh=new THREE.Mesh(geometry,material);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);geometries.forEach(g=>g.dispose());
  }
- for(const b of blocks){const dx=ball.position.x-b.position.x,dy=ball.position.y-b.position.y,dz=ball.position.z-b.position.z;if(Math.abs(dx)<.36&&Math.abs(dy)<.305&&Math.abs(dz)<.29){const px=previous.x-b.position.x,py=previous.y-b.position.y;if(Math.abs(px)>=.36)velocity.x*=-1;else if(Math.abs(py)>=.305)velocity.y*=-1;else velocity.z*=-1;ball.position.copy(previous);if(--b.userData.hp<=0)destroy(b);else{b.material.emissiveIntensity=1.6;sound(250)}break}}
- if(ball.position.z>1.5){lives--;launched=false;combo=0;sound(100,.4);if(lives<=0){finish(false);return}ui();return}
- if(roundWait>0)return;
- }
+ assetReport.push({path,meshes,triangles});return gltf.scene;
 }
-let last=0,snapCooldown=0,exitHold=0;
-renderer.setAnimationLoop(time=>{const dt=Math.min((time-last)/1000,.035)||.016;last=time;const t=time/1000;
- if(state==='lobby'){arcade.visible=true;arena.visible=false;rig.position.set(3.6,0,4.5);camera.position.set(0,2.25,0);camera.lookAt(-.8+Math.sin(t*.12)*.25,1.75,-5);}
- if(state==='portal'){transition-=dt;portal.scale.setScalar(1+Math.pow(1-transition/1.8,2)*12);portal.position.z=-4.78+(1-transition/1.8)*1.2; if(!renderer.xr.isPresenting){rig.position.lerp(new THREE.Vector3(0,0,-4.3),dt*4);camera.position.lerp(new THREE.Vector3(0,1.54,0),dt*4);camera.lookAt(0,1.54,-5)}if(transition<=0)start()}
- if(state==='arcade'){
-  const speed=dt*2.2,dir=new THREE.Vector3((keys.has('KeyD')?1:0)-(keys.has('KeyA')?1:0),0,(keys.has('KeyS')?1:0)-(keys.has('KeyW')?1:0));dir.applyAxisAngle(new THREE.Vector3(0,1,0),camera.rotation.y);rig.position.addScaledVector(dir,speed);rig.position.x=clamp(rig.position.x,-5.7,5.7);rig.position.z=clamp(rig.position.z,-3.65,7);
-  if(token.userData.held){token.getWorldPosition(worldPos);if(worldPos.distanceTo(new THREE.Vector3(.26,.62,-4.51))<.25){portalArmed=true;arcade.attach(token);token.userData.held=false;token.position.set(.25,1.15,-4.55);entryLabel.draw('TOKEN ACCEPTED\nLEAN CLOSER');sound(800)}}
-  if(portalArmed){renderer.xr.getCamera().getWorldPosition(worldPos);if(worldPos.distanceTo(new THREE.Vector3(0,1.54,-4.8))<.85)beginPortal()}
-  gem.rotation.y+=dt;token.rotation.z+=dt;
+Promise.all([loadModel('/assets/arcade-premium.glb',arcade),loadModel('/assets/arena-premium.glb',arena),loadModel('/assets/brick-premium.glb')]).then(([, ,asset])=>{
+ brickAsset=asset;ready=true;$('#play').disabled=false;$('#play-label').textContent='Play Brickstorm';$('#load-note').textContent='Mouse or touch · No headset needed';
+}).catch(error=>{console.error(error);$('#play-label').textContent='Reload the arcade';$('#play').disabled=false;$('#play').onclick=()=>location.reload();$('#load-note').textContent='A 3D asset did not load. Click to retry.';});
+
+const game=new Brickstorm();
+let mode='home',intro=true,banked=false,muted=true,audioContext,twoPaddles=false;
+let save;try{save=readSave(localStorage)}catch{save={scores:[],tickets:0,trophy:false}}
+const blockMeshes=new Map(),bonusMeshes=new Map(),fragments=[];
+const colors=[0x50bbbc,0x587fce,0xa55ec4,0xdc6b77,0xe6ac4d];
+const sharedFragmentGeo=new RoundedBoxGeometry(.16,.12,.15,1,.02);
+const fragmentMaterials=colors.map(c=>new THREE.MeshStandardMaterial({color:c,metalness:.45,roughness:.25,emissive:c,emissiveIntensity:.2}));
+function solid(geometry,color,emission=0){return new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color,metalness:.5,roughness:.24,emissive:color,emissiveIntensity:emission}))}
+function createPaddle(color){
+ const group=new THREE.Group();const shell=solid(new RoundedBoxGeometry(1.2,.72,.09,4,.07),0x213a48);group.add(shell);
+ const face=solid(new RoundedBoxGeometry(1.1,.61,.015,3,.055),color,.35);face.position.z=-.055;face.material.transparent=true;face.material.opacity=.22;group.add(face);
+ const rim=new THREE.LineSegments(new THREE.EdgesGeometry(new RoundedBoxGeometry(1.15,.67,.10,4,.065),25),new THREE.LineBasicMaterial({color}));group.add(rim);
+ const grip=solid(new RoundedBoxGeometry(.22,.38,.13,3,.025),0x162a34);grip.position.set(0,-.44,0);group.add(grip);
+ for(const x of [-.47,.47]){const stud=solid(new THREE.CylinderGeometry(.023,.023,.12,12),0xbe976a);stud.rotation.x=Math.PI/2;stud.position.x=x;group.add(stud)}
+ arena.add(group);return group;
+}
+const paddle=createPaddle(0x9ceae4),secondPaddle=createPaddle(0xf0b5cf);secondPaddle.visible=false;
+paddle.position.set(0,1.7,.35);
+const ball=solid(new THREE.SphereGeometry(.10,24,16),0xd6fffa,2.7);arena.add(ball);
+const ballLight=areaLight(arena,0x8aece7,2,0,0,0);
+const trail=Array.from({length:15},(_,i)=>{const m=new THREE.Mesh(new THREE.SphereGeometry(.08*(1-i/17),10,6),new THREE.MeshBasicMaterial({color:0x96f4ed,transparent:true,opacity:(1-i/15)*.3,depthWrite:false}));arena.add(m);return m});
+const aimRing=new THREE.Mesh(new THREE.RingGeometry(.15,.17,40),new THREE.MeshBasicMaterial({color:0xe4bb83,transparent:true,opacity:.6,side:THREE.DoubleSide,depthWrite:false}));arena.add(aimRing);
+function makeLabel(parent,w,h,x,y,z){
+ const canvas=document.createElement('canvas');canvas.width=1024;canvas.height=256;const context=canvas.getContext('2d');const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
+ const mesh=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:texture,transparent:true,depthWrite:false}));mesh.position.set(x,y,z);parent.add(mesh);
+ return text=>{context.clearRect(0,0,1024,256);context.textAlign='center';context.fillStyle='#e2d0ab';context.font='500 52px monospace';text.split('\n').forEach((line,i)=>context.fillText(line,512,90+i*85));texture.needsUpdate=true};
+}
+const arenaLabel=makeLabel(arena,4.5,.8,0,4.4,-8);
+const prizeLabel=makeLabel(arcade,2.5,.6,-4,2.5,2.5);
+const cabinetLabel=makeLabel(arcade,1.3,.3,0,2.7,-2.7);cabinetLabel('BRICKSTORM\nTRIGGER TO PLAY');
+function updatePrize(){prizeLabel(`${save.tickets} TICKETS\nBEST ${String(save.scores[0]?.score||0).padStart(6,'0')}`)}updatePrize();
+const trophy=solid(new THREE.IcosahedronGeometry(.23,1),0xe9bb78,.3);trophy.position.set(-4,2.05,2.5);arcade.add(trophy);trophy.visible=save.trophy;
+function bank(){if(banked)return;banked=true;if(game.score>0){save.scores.push({score:game.score,level:game.level+1,won:game.won});save.scores.sort((a,b)=>b.score-a.score);save.scores=save.scores.slice(0,10);save.tickets+=Math.floor(game.score/100);save.trophy||=game.won;try{localStorage.setItem('afterhours-v1',JSON.stringify(save))}catch{notify('Score saved for this session only')}updatePrize();trophy.visible=save.trophy}}
+function sound(frequency=600,duration=.12,volume=.05){
+ if(muted)return;
+ audioContext ||= new AudioContext();audioContext.resume();
+ const osc=audioContext.createOscillator(),gain=audioContext.createGain();osc.type='triangle';osc.frequency.setValueAtTime(frequency,audioContext.currentTime);osc.frequency.exponentialRampToValueAtTime(frequency*.7,audioContext.currentTime+duration);gain.gain.setValueAtTime(volume,audioContext.currentTime);gain.gain.exponentialRampToValueAtTime(.0001,audioContext.currentTime+duration);osc.connect(gain).connect(audioContext.destination);osc.start();osc.stop(audioContext.currentTime+duration);
+}
+function notify(message){$('#message').textContent=message;$('#message').style.opacity=1;clearTimeout(notify.timer);notify.timer=setTimeout(()=>$('#message').style.opacity=0,2200)}
+function clearModels(map){for(const mesh of map.values()){arena.remove(mesh);mesh.traverse(o=>{if(o.isMesh&&o.userData.ownedMaterial)o.material.dispose()})}map.clear()}
+function buildBricks(){
+ clearModels(blockMeshes);clearModels(bonusMeshes);
+ for(const b of game.blocks){const mesh=brickAsset.clone(true);mesh.traverse(o=>{if(o.isMesh){o.material=o.material.clone();o.userData.ownedMaterial=true;if(o.name.startsWith('BRICK_INLAY')){o.material.color.set(colors[b.row]);o.material.emissive.set(colors[b.row]);o.material.emissiveIntensity=.5}else if(o.name.startsWith('BRICK_BODY')){o.material.color.set(colors[b.row]).multiplyScalar(.3);o.material.emissiveIntensity=0;}o.castShadow=false;o.receiveShadow=true}});mesh.position.set(b.x,b.y,b.z);arena.add(mesh);blockMeshes.set(b.id,mesh)}
+}
+function fragment(position,row,count=8,slow=false){for(let i=0;i<count;i++){const mesh=new THREE.Mesh(sharedFragmentGeo,fragmentMaterials[row%5]);mesh.position.copy(position);mesh.userData={velocity:new THREE.Vector3((Math.random()-.5)*2,Math.random()*2,(Math.random()-.5)*2),life:slow?2.5:.65,slow};arena.add(mesh);fragments.push(mesh)}}
+function processEvents(){for(const event of game.drainEvents()){
+ if(event.type==='level'){buildBricks();intro=game.level===0;syncUI();}
+ if(event.type==='hit'){const mesh=blockMeshes.get(event.id);if(mesh){arena.remove(mesh);blockMeshes.delete(event.id)}fragment(event.position,event.row);sound(450+event.row*130);}
+ if(event.type==='paddle'){sound(250,.08);haptic(.2)}
+ if(event.type==='armor')sound(170,.1);
+ if(event.type==='miss'){notify('You have another ball.');sound(100,.3)}
+ if(event.type==='power'){notify({wide:'Wide paddle · 10 seconds',slow:'Slow ball · 10 seconds',life:'Extra life'}[event.kind]);sound(1000,.22)}
+ if(event.type==='collapse'){notify('Support broken. Watch it fall.');for(const b of event.blocks){const mesh=blockMeshes.get(b.id);if(mesh){mesh.userData={velocity:new THREE.Vector3((Math.random()-.5)*1.1,Math.random(),.5),life:2.5,slow:true,whole:true};fragments.push(mesh);blockMeshes.delete(b.id)}}sound(95,.6);}
+ if(event.type==='win'||event.type==='lose'){bank();sound(event.type==='win'?900:110,.5);}
+ syncUI();
+}}
+function setView(position,target){rig.position.set(0,0,0);rig.rotation.set(0,0,0);camera.position.copy(position);camera.lookAt(target);camera.updateMatrixWorld(true)}
+const homePosition=new THREE.Vector3(3.45,1.95,2.6),homeTarget=new THREE.Vector3(-1.3,1.6,-2.8);
+setView(homePosition,homeTarget);
+function home(){bank();mode='home';game.paused=false;arcade.visible=true;arena.visible=false;document.body.classList.remove('in-game');$('#hud').hidden=true;$('#instruction').hidden=true;$('#play-hint').hidden=true;$('#tour-controls').hidden=true;$('#home').hidden=false;$('#vignette').hidden=false;setView(homePosition,homeTarget);keys.clear();}
+function startGame(){
+ if(!ready)return;
+ mode='game';banked=false;game.restart();intro=true;arcade.visible=false;arena.visible=true;document.body.classList.add('in-game');$('#hud').hidden=false;$('#tour-controls').hidden=true;$('#play-hint').hidden=false;
+ if(renderer.xr.isPresenting){rig.position.set(0,0,.6);rig.rotation.set(0,0,0);camera.position.set(0,0,0)}
+ else setView(new THREE.Vector3(0,2.45,5.3),new THREE.Vector3(0,2.2,-5));
+ paddle.position.set(0,1.7,.35);pointerValid=false;keys.clear();processEvents();syncUI();$('#world').focus({preventScroll:true});
+}
+let portalTime=0;
+function play(){if(!ready||mode==='portal')return;mode='portal';portalTime=0;$('#play').blur();$('#transition').style.opacity=1;sound(140,.3);}
+function launch(){if(mode!=='game')return;if(game.finished){play();return}if(game.paused){game.paused=false;syncUI();$('#world').focus({preventScroll:true});return}game.serve(paddle);intro=false;processEvents();$('#world').focus({preventScroll:true})}
+function pause(){if(mode!=='game'||game.finished||game.clearTime)return;game.paused=!game.paused;keys.clear();syncUI()}
+function syncUI(){
+ if(mode!=='game')return;
+ $('#level').textContent=`${LEVEL_NAMES[game.level]} / ${String(game.level+1).padStart(2,'0')}`;
+ $('#score').textContent=String(game.score).padStart(6,'0');$('#lives').textContent='● '.repeat(game.lives).trim();$('#bricks').textContent=game.blocks.length;$('#pause').textContent=game.paused?'Resume':'Pause';
+ const show=(!game.launched&&!game.clearTime)||game.paused||game.finished;
+ $('#instruction').hidden=!show||renderer.xr.isPresenting;
+ if(game.finished){$('#instruction-kicker').textContent=game.won?'ALL TEN CLEARED':'RUN COMPLETE';$('#instruction-title').textContent=game.won?'You broke the storm.':'One more game?';$('#instruction-body').textContent=`${game.score.toLocaleString()} points · ${Math.floor(game.score/100)} tickets saved${game.won?' · Trophy earned':''}`;$('#serve').innerHTML='Play again <span>↗</span>'}
+ else if(game.paused){$('#instruction-kicker').textContent='TAKE YOUR TIME';$('#instruction-title').textContent='Game paused.';$('#instruction-body').textContent='Your ball is waiting exactly where you left it.';$('#serve').textContent='Resume game'}
+ else{$('#instruction-kicker').textContent=intro?'YOUR FIRST SERVE':`LEVEL ${game.level+1} OF 10`;$('#instruction-title').textContent=intro?'Move your paddle.':'Ready for another ball?';$('#instruction-body').innerHTML=intro?'Move your mouse. The paddle follows it.<br>Catch the returning ball and break the wall.':'Aim with your mouse or touch.<br>Break the lowest row to collapse the formation.';$('#serve').innerHTML='Launch ball <span>↗</span>'}
+ arenaLabel(`${String(game.score).padStart(6,'0')}     ${game.lives} LIVES\n${game.finished?'TRIGGER TO PLAY AGAIN':game.paused?'PAUSED · TRIGGER TO RESUME':!game.launched?'TRIGGER TO SERVE':LEVEL_NAMES[game.level].toUpperCase()}`);
+}
+$('#play').onclick=play;$('#serve').onclick=launch;$('#pause').onclick=pause;$('#leave').onclick=()=>{if(renderer.xr.isPresenting)xrArcade();else home()};
+$('#audio').onclick=()=>{muted=!muted;$('#audio').textContent=muted?'Sound off':'Sound on';$('#audio').setAttribute('aria-pressed',String(!muted));sound()};
+function dialog(html){$('#dialog-content').innerHTML=html;$('#dialog').showModal()}
+$('#close').onclick=()=>$('#dialog').close();
+$('#scores').onclick=()=>dialog(`<h2>Your high scores</h2><p>${save.tickets} tickets collected. Saved on this browser.</p>${save.scores.length?'<table><thead><tr><th>Rank</th><th>Score</th><th>Level</th></tr></thead><tbody>'+save.scores.map((s,i)=>`<tr><td>${i+1}</td><td>${s.score.toLocaleString()}</td><td>${Number(s.level)||1}/10</td></tr>`).join('')+'</tbody></table>':'<p>Your first score belongs here. Close this panel and select Play Brickstorm.</p>'}`);
+$('#help').onclick=()=>{dialog('<h2>Start here.</h2><p><b>1.</b> Select <b>Play Brickstorm</b>.<br><b>2.</b> Move your mouse or finger to move the paddle.<br><b>3.</b> Select <b>Launch ball</b> or press Space.</p><p>Catch the ball when it comes back toward you. Hit near the paddle’s edges to change the angle. Break the bottom supports to bring the formation down. Gold bonuses give a wider paddle, slower ball, or extra life.</p><p><b>Pause:</b> use the visible Pause button or Esc. Click Resume game to continue. Arrow keys also move the paddle.</p><p><b>VR:</b> trigger starts and serves. Move your controller to catch the ball. Grip a token near the center cabinet and insert it for the optional physical entry. Hold both triggers to return.</p><label><input type="checkbox" id="two"> Use two paddles in VR</label>');$('#two').checked=twoPaddles;$('#two').onchange=e=>twoPaddles=e.target.checked};
+// Guided views replace unreliable free-roaming controls. Playing never requires walking to a cabinet.
+const views=[{name:'The arcade floor',position:homePosition,target:homeTarget},{name:'Your Brickstorm machine',position:new THREE.Vector3(1.6,1.65,-.3),target:new THREE.Vector3(0,1.35,-2.7)},{name:'The prize counter',position:new THREE.Vector3(-1,1.9,5.3),target:new THREE.Vector3(-4,1.3,2.5)}];let viewIndex=0;
+function tour(index){if(!ready)return;mode='tour';viewIndex=(index+views.length)%views.length;$('#home').hidden=true;$('#vignette').hidden=true;$('#tour-controls').hidden=false;$('#tour-label').textContent=views[viewIndex].name;setView(views[viewIndex].position,views[viewIndex].target)}
+$('#tour').onclick=()=>tour(0);$('#tour-prev').onclick=()=>tour(viewIndex-1);$('#tour-next').onclick=()=>tour(viewIndex+1);$('#tour-play').onclick=play;$('#tour-back').onclick=home;
+
+// Pointer ray intersects the paddle plane: cursor and visible paddle now share the same coordinate system.
+const pointer=new THREE.Vector2(),raycaster=new THREE.Raycaster(),pointerPlane=new THREE.Plane(new THREE.Vector3(0,0,1),-.35),hitPoint=new THREE.Vector3();
+let pointerValid=false;const keys=new Set();
+function aim(event){if(mode!=='game'||renderer.xr.isPresenting)return;const rect=renderer.domElement.getBoundingClientRect();pointer.set((event.clientX-rect.left)/rect.width*2-1,-((event.clientY-rect.top)/rect.height)*2+1);pointerValid=true;}
+$('#world').addEventListener('pointermove',aim);
+$('#world').addEventListener('pointerdown',event=>{aim(event);if(mode==='game'){if(!game.launched||game.paused)launch()}$('#world').focus({preventScroll:true});});
+window.addEventListener('keydown',event=>{if($('#dialog').open)return;if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Escape'].includes(event.code))event.preventDefault();if(event.repeat&&['Space','Escape','KeyP'].includes(event.code))return;keys.add(event.code);if(mode==='game'){if(event.code==='Space')launch();if(event.code==='Escape'||event.code==='KeyP')pause();if(event.code.startsWith('Arrow'))pointerValid=false}else if(event.code==='Space')play()});
+window.addEventListener('keyup',event=>keys.delete(event.code));
+window.addEventListener('blur',()=>{keys.clear();if(mode==='game'&&game.launched&&!game.finished){game.paused=true;syncUI()}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&mode==='game'&&game.launched){game.paused=true;syncUI()}});
+
+// WebXR: direct entry, controller paddles, explicit in-world labels, optional physical token interaction.
+const controllers=[],grips=[];let primaryIndex=0;
+for(let i=0;i<2;i++){
+ const controller=renderer.xr.getController(i),grip=renderer.xr.getControllerGrip(i);rig.add(controller,grip);controllers.push(controller);grips.push(grip);
+ controller.addEventListener('connected',e=>{controller.userData.handedness=e.data.handedness;if(e.data.handedness==='right')primaryIndex=i});
+ controller.addEventListener('selectstart',()=>{if(mode==='xr-arcade')play();else if(mode==='game')launch()});
+ const handle=solid(new RoundedBoxGeometry(.045,.11,.07,2,.01),0x344450);grip.add(handle);
+ controller.addEventListener('squeezestart',()=>{if(mode!=='xr-arcade'||token.userData.held)return;const p=controller.getWorldPosition(new THREE.Vector3());if(p.distanceTo(token.getWorldPosition(new THREE.Vector3()))<.35){controller.attach(token);token.position.set(0,-.025,-.08);token.userData.held=true;}});
+ controller.addEventListener('squeezeend',()=>{if(token.parent===controller){arcade.attach(token);token.position.set(.23,1.18,-2.15);token.userData.held=false;}});
+}
+const token=solid(new THREE.CylinderGeometry(.045,.045,.012,32),0xe0b87a,.25);token.rotation.x=Math.PI/2;token.position.set(.23,1.18,-2.15);arcade.add(token);
+function xrArcade(){bank();mode='xr-arcade';arcade.visible=true;arena.visible=false;rig.position.set(0,0,-1.25);rig.rotation.set(0,0,0);camera.position.set(0,0,0);$('#instruction').hidden=true;$('#hud').hidden=true;$('#play-hint').hidden=true;document.body.classList.add('in-game');}
+$('#vr').onclick=async()=>{if(!ready)return;try{if(!navigator.xr||!await navigator.xr.isSessionSupported('immersive-vr')){dialog('<h2>Play in your headset</h2><p>Open this site in a compatible headset browser over HTTPS, then select Play with a VR headset.</p><p>You can play right here with your mouse using Play Brickstorm.</p>');return}const session=await navigator.xr.requestSession('immersive-vr',{optionalFeatures:['local-floor','bounded-floor']});await renderer.xr.setSession(session);xrArcade()}catch(error){dialog('<h2>VR did not start</h2><p>'+String(error.message).replace(/[<>]/g,'')+'</p><p>You can still select Play Brickstorm for desktop play.</p>')}};
+renderer.xr.addEventListener('sessionend',()=>{home()});
+function haptic(strength){const inputs=renderer.xr.getSession()?.inputSources;if(inputs)for(const source of inputs)source.gamepad?.hapticActuators?.[0]?.pulse(strength,30)?.catch(()=>{})}
+let last=performance.now(),exitHold=0;
+renderer.setAnimationLoop(now=>{
+ const dt=Math.min(Math.max((now-last)/1000,0),1/30);last=now;
+ if(mode==='portal'){
+  portalTime+=dt;
+  if(portalTime>.3){startGame();$('#transition').style.opacity=0;}
  }
- if(renderer.xr.isPresenting){const session=renderer.xr.getSession();let triggers=0;snapCooldown-=dt;for(const source of session.inputSources){const gp=source.gamepad;if(!gp)continue;if(gp.buttons[0]?.pressed)triggers++;if(state==='arcade'){const ax=gp.axes;if(source.handedness==='left'&&ax.length>=4){const d=new THREE.Vector3(ax[2],0,ax[3]);d.applyQuaternion(rig.quaternion);rig.position.addScaledVector(d,dt*1.5);rig.position.x=clamp(rig.position.x,-5.7,5.7);rig.position.z=clamp(rig.position.z,-3.65,7)}if(source.handedness==='right'&&Math.abs(ax[2])>.7&&snapCooldown<=0){rig.rotation.y-=Math.sign(ax[2])*Math.PI/6;snapCooldown=.35}}}exitHold=triggers===2?exitHold+dt:0;if(exitHold>2){exitHold=0;back()}}
- if(state==='arena'){
-  if(renderer.xr.isPresenting){controllers[0].getWorldPosition(paddle.position);controllers[0].getWorldQuaternion(paddle.quaternion);paddle2.visible=twoPaddles;controllers[1].getWorldPosition(paddle2.position);controllers[1].getWorldQuaternion(paddle2.quaternion);controllers.forEach(c=>c.userData.ray.visible=false)}else{paddle.position.set(pointer.x,pointer.y,-.65);paddle.quaternion.identity();paddle2.visible=false}
-  for(let j=trail.length-1;j>0;j--)trail[j].position.copy(trail[j-1].position);trail[0].position.copy(ball.position);trail.forEach(dot=>dot.visible=launched);if(!paused){gameTime+=dt;powerTime=Math.max(0,powerTime-dt);if(!powerTime){paddle.scale.set(1,1,1);if(power==='SLOW BALL'&&launched)velocity.setLength(4.5+level*.25);power=''}for(const b of blocks)if(b.userData.moving)b.position.x=b.userData.x+Math.sin(gameTime*1.2)*.35;
-   if(roundWait>0){roundWait-=dt;if(roundWait<=0){if(level===9)finish(true);else{level++;buildLevel()}}}else physics(dt);
-   for(let i=bonuses.length-1;i>=0;i--){const b=bonuses[i];b.position.z+=dt*2.5;b.rotation.y+=dt*2;if(b.position.distanceTo(paddle.position)<.8||(paddle2.visible&&b.position.distanceTo(paddle2.position)<.8)){power=b.userData.kind;powerTime=10;if(power==='WIDE PADDLE')paddle.scale.set(1.8,1.4,1);if(power==='SLOW BALL')velocity.multiplyScalar(.65);if(power==='EXTRA LIFE')lives=Math.min(5,lives+1);toast(power);sound(1000,.2);b.position.z=4;ui()}if(b.position.z>3){arena.remove(b);b.geometry.dispose();b.material.dispose();bonuses.splice(i,1)}}
+ if(mode==='game'){
+  if(renderer.xr.isPresenting){grips[primaryIndex].getWorldPosition(paddle.position);grips[primaryIndex].getWorldQuaternion(paddle.quaternion);secondPaddle.visible=twoPaddles;grips[1-primaryIndex].getWorldPosition(secondPaddle.position);grips[1-primaryIndex].getWorldQuaternion(secondPaddle.quaternion)}
+  else{
+   paddle.quaternion.identity();secondPaddle.visible=false;
+   if(pointerValid){camera.updateMatrixWorld(true);raycaster.setFromCamera(pointer,camera);if(raycaster.ray.intersectPlane(pointerPlane,hitPoint))paddle.position.copy(hitPoint)}
+   const movement=new THREE.Vector3((keys.has('ArrowRight')?1:0)-(keys.has('ArrowLeft')?1:0),(keys.has('ArrowUp')?1:0)-(keys.has('ArrowDown')?1:0),0);paddle.position.addScaledVector(movement,dt*3);
+   paddle.position.x=THREE.MathUtils.clamp(paddle.position.x,-2.9,2.9);paddle.position.y=THREE.MathUtils.clamp(paddle.position.y,.45,4.45);paddle.position.z=.35;
   }
+  paddle.scale.set(game.power==='wide'?1.6:1,game.power==='wide'?1.4:1,1);
+  const paddles=[paddle,...(secondPaddle.visible?[secondPaddle]:[])];game.update(dt,paddles);processEvents();
+  ball.position.copy(game.ball);ballLight.position.copy(game.ball);ball.visible=!game.finished&&!game.clearTime;
+  for(let i=trail.length-1;i>0;i--)trail[i].position.copy(trail[i-1].position);trail[0].position.copy(game.ball);trail.forEach(m=>m.visible=game.launched&&!game.paused);
+  aimRing.visible=game.launched&&game.velocity.z>0;
+  if(aimRing.visible){const travel=(.35-game.ball.z)/game.velocity.z;aimRing.position.set(THREE.MathUtils.clamp(game.ball.x+game.velocity.x*travel,-3,3),THREE.MathUtils.clamp(game.ball.y+game.velocity.y*travel,.35,4.6),.30);}
+  for(const b of game.blocks){const mesh=blockMeshes.get(b.id);if(mesh)mesh.position.set(b.x,b.y,b.z)}
+  for(const bonus of game.bonuses){if(!bonusMeshes.has(bonus.id)){const m=solid(new THREE.IcosahedronGeometry(.18,1),0xedc78a,.8);arena.add(m);bonusMeshes.set(bonus.id,m)}const m=bonusMeshes.get(bonus.id);m.position.copy(bonus.position);m.rotation.y+=dt*2;}
+  for(const [id,m] of bonusMeshes)if(!game.bonuses.some(b=>b.id===id)){arena.remove(m);m.geometry.dispose();m.material.dispose();bonusMeshes.delete(id)}
+  $('#power').textContent=game.powerTime>0?`${{wide:'Wide paddle',slow:'Slow ball',life:'Extra life'}[game.power]} ${Math.ceil(game.powerTime)}s`:'';
  }
- for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.userData.life-=dt;p.position.addScaledVector(p.userData.v,dt*(p.userData.slow?.25:1));p.userData.v.y-=dt*(p.userData.slow?.3:3);p.rotation.x+=dt;p.scale.multiplyScalar(1-dt*.5);if(p.userData.life<=0){arena.remove(p);p.geometry.dispose();p.material.dispose();particles.splice(i,1)}}
+ if(mode==='xr-arcade'&&token.userData.held){if(token.getWorldPosition(new THREE.Vector3()).distanceTo(new THREE.Vector3(.22,.75,-2.154))<.19){arcade.attach(token);token.userData.held=false;token.position.set(.23,1.18,-2.15);play()}}
+ if(renderer.xr.isPresenting){const inputs=renderer.xr.getSession().inputSources;let pressed=0;for(const source of inputs)if(source.gamepad?.buttons[0]?.pressed)pressed++;exitHold=pressed===2?exitHold+dt:0;if(exitHold>1.5){exitHold=0;xrArcade()}}
+ for(let i=fragments.length-1;i>=0;i--){const f=fragments[i];if(game.paused&&mode==='game')continue;f.userData.life-=dt;f.position.addScaledVector(f.userData.velocity,dt*(f.userData.slow?.4:1));f.userData.velocity.y-=dt*(f.userData.slow?1.4:3);f.rotation.x+=dt*.6;f.rotation.z+=dt*.35;if(f.userData.life<=0){arena.remove(f);fragments.splice(i,1)}}
+ trophy.rotation.y+=dt*.3;
  if(renderer.xr.isPresenting)renderer.render(scene,camera);else composer.render();
 });
 window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);composer.setSize(innerWidth,innerHeight)});
-// Read-only diagnostics for smoke testing and performance inspection.
-window.arcadeDiagnostics=()=>({state,loaded,level:level+1,score,lives,blocks:blocks.length,launched,drawCalls:renderer.info.render.calls,save});
+// Read-only verification report. No gameplay bypasses are exposed.
+window.arcadeDiagnostics=()=>({mode,ready,assets:assetReport,level:game.level+1,score:game.score,lives:game.lives,bricks:game.blocks.length,paused:game.paused,launched:game.launched,drawCalls:renderer.info.render.calls});
