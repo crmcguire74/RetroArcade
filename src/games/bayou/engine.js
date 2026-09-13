@@ -5,7 +5,7 @@ export const HOP_SECONDS = .18;
 export const ROW_COUNT = 13;
 export const LANES = [
   {row:0,type:'bank'},
-  {row:1,type:'road',speed:1.45,length:1.8,spacing:5.4,offset:0},
+  {row:1,type:'road',speed:1.45,length:1.8,spacing:5.4,offset:2.7},
   {row:2,type:'road',speed:-2.1,length:2.5,spacing:6.8,offset:2.7},
   {row:3,type:'road',speed:1.2,length:3.0,spacing:7.8,offset:1.1},
   {row:4,type:'road',speed:-1.85,length:1.8,spacing:5.7,offset:3.8},
@@ -23,7 +23,8 @@ export function laneObjects(lane,time,round=0){
   if(!lane.speed)return [];
   const speed=lane.speed*(1+round*.18), offset=lane.offset+time*speed;
   const phase=((offset%lane.spacing)+lane.spacing)%lane.spacing;
-  return Array.from({length:9},(_,i)=>({id:`${lane.row}:${i}`,x:phase+(i-4)*lane.spacing,length:lane.length,speed,submerged:lane.type==='turtle'&&((time+lane.row*1.17)%12)>10.2}));
+  const divePhase=(time+lane.row*1.17)%12;
+  return Array.from({length:9},(_,i)=>({id:`${lane.row}:${i}`,x:phase+(i-4)*lane.spacing,length:lane.length,speed,submerged:lane.type==='turtle'&&divePhase>10.2,warning:lane.type==='turtle'&&divePhase>8.8&&divePhase<=10.2}));
 }
 export class BayouCrossing {
  constructor(){this.restart()}

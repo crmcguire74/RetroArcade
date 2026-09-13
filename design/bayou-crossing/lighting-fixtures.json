@@ -1,0 +1,65 @@
+[
+  {
+    "name": "Moon key",
+    "type": "AREA",
+    "position": [
+      1,
+      8,
+      11
+    ],
+    "target": [
+      0,
+      8,
+      0
+    ],
+    "color": [
+      0.56,
+      0.68,
+      1.0
+    ],
+    "power": 2200,
+    "size": 10
+  },
+  {
+    "name": "Warm arrival fill",
+    "type": "AREA",
+    "position": [
+      -3,
+      -3,
+      6
+    ],
+    "target": [
+      0,
+      3,
+      0
+    ],
+    "color": [
+      1,
+      0.65,
+      0.29
+    ],
+    "power": 1100,
+    "size": 7
+  },
+  {
+    "name": "River rim",
+    "type": "AREA",
+    "position": [
+      -5,
+      17,
+      6
+    ],
+    "target": [
+      0,
+      11,
+      0
+    ],
+    "color": [
+      0.41,
+      0.8,
+      0.78
+    ],
+    "power": 1500,
+    "size": 7
+  }
+]

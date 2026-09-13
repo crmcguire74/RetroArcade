@@ -27,10 +27,17 @@ test('pause freezes a hop, timer and moving world',()=>{
 });
 
 test('a vehicle strikes mid-hop and removes only one life during recovery',()=>{
- const game=started();game.hopDirection(0,1);advance(game,.18);
+ const game=started();game.time=1.75;game.hopDirection(0,1);advance(game,.18);
  assert.equal(game.lives,2);assert.equal(game.hop,null);
  assert.ok(game.drainEvents().some(e=>e.type==='death'&&e.reason==='traffic'));
  advance(game,.5);assert.equal(game.lives,2);advance(game,.6);assert.equal(game.frog.row,0);
+});
+
+test('the first immediate forward hop is safe and diving turtles give advance warning',()=>{
+ const game=started();game.hopDirection(0,1);advance(game,.18);
+ assert.equal(game.lives,3);assert.equal(game.frog.row,1);
+ const objects=laneObjects(LANES[8],0);
+ assert.equal(objects[0].warning,true);assert.equal(objects[0].submerged,false);
 });
 
 test('logs carry the frog consistently at 30 and 120 frames per second',()=>{

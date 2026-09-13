@@ -76,12 +76,12 @@
     "wallElevations": [
       "plans/side-elevation.png"
     ],
-    "visualTarget": "plans/visual-target.png",
+    "visualTarget": "images/visual-concept.png",
     "openingContactSheet": "masks/opening-schedule.html"
   },
   "functionalExceptions": [
     "Outdoor gameplay area: terrain substrate has thickness, but no roof or enclosing walls are proposed. Side berms provide explicit collision containment.",
     "Arrival is a cabinet portal to a visible open bank, not a decorative architectural doorway.",
-    "Use Blender-authored geometry and built-in generated references; do not submit to a paid image-to-3D provider. This exception is pending user review."
+    "User approved Blender-authored geometry with built-in image references and no paid Meshy generation on 2026-09-13T21:17:48.140690+00:00"
   ]
 }

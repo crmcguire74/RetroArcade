@@ -1,0 +1,29 @@
+{
+  "assets": {
+    "frog": {
+      "vertices": 5840,
+      "triangles": 11316,
+      "materials": 6
+    },
+    "truck": {
+      "vertices": 3558,
+      "triangles": 6678,
+      "materials": 10
+    },
+    "log": {
+      "vertices": 3288,
+      "triangles": 6164,
+      "materials": 4
+    },
+    "turtle": {
+      "vertices": 2954,
+      "triangles": 5516,
+      "materials": 4
+    }
+  },
+  "instances": 33,
+  "environmentObjects": 799,
+  "source": "model_bayou.py",
+  "referenceApproval": "explicit user approval in conversation",
+  "exported": false
+}
