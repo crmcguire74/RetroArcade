@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {formation,reflectPaddle,readSave} from './rules.js';
+test('ten distinct playable bounded formations',()=>{const signatures=new Set();for(let i=0;i<10;i++){const f=formation(i);assert.ok(f.length>=15);assert.ok(f.every(b=>Math.abs(b.x)<3&&b.y>.3&&b.y<4.9&&b.z>-7.3));signatures.add(JSON.stringify(f))}assert.equal(signatures.size,10)});
+test('paddle aims toward the wall at constant speed',()=>{for(const x of [-1,0,1]){const v=reflectPaddle(.2,.3,1,x,.2,5);assert.ok(v.z<0);assert.ok(Math.abs(Math.hypot(v.x,v.y,v.z)-5)<1e-8)}assert.ok(reflectPaddle(0,0,1,-1,0,5).x<0)});
+test('malformed storage recovers without preventing play',()=>{assert.deepEqual(readSave({getItem:()=>'{'}),{scores:[],tickets:0,trophy:false});assert.equal(readSave({getItem:()=>'{"scores":[{"score":100},{"score":-1}],"tickets":-2}'}).scores.length,1)});
