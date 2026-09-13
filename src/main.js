@@ -19,7 +19,7 @@ renderer.xr.enabled=true;
 renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=1.15;
+renderer.toneMappingExposure=.9;
 const scene=new THREE.Scene();
 scene.background=new THREE.Color('#080e16');
 scene.fog=new THREE.Fog('#080e16',16,50);
@@ -42,7 +42,7 @@ const spot=new THREE.SpotLight(0xb7e4ef,110,18,Math.PI/4,.65,1.5);
 spot.position.set(2,5,2);spot.target.position.set(0,0,-3);spot.castShadow=true;spot.shadow.mapSize.set(1024,1024);spot.shadow.bias=-.0008;arcade.add(spot,spot.target);
 const composer=new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene,camera));
-composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),.22,.35,1.8));
+composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),.12,.25,2.3));
 composer.addPass(new OutputPass());
 const textureLoader=new THREE.TextureLoader();
 const nebula=textureLoader.load('/assets/arena-nebula.png');nebula.colorSpace=THREE.SRGBColorSpace;
@@ -55,7 +55,7 @@ const assetReport=[];
 async function loadModel(path,parent){
  const gltf=await loader.loadAsync(path);gltf.scene.updateMatrixWorld(true);
  const bins=new Map();let meshes=0,triangles=0;
- gltf.scene.traverse(o=>{if(o.isMesh){meshes++;triangles+=(o.geometry.index?.count||o.geometry.attributes.position.count)/3;const key=o.material.uuid;if(!bins.has(key))bins.set(key,{material:o.material,geometries:[]});const g=o.geometry.clone().applyMatrix4(o.matrixWorld);if(!g.attributes.uv)g.setAttribute('uv',new THREE.BufferAttribute(new Float32Array(g.attributes.position.count*2),2));bins.get(key).geometries.push(g);o.material.envMapIntensity=.45;}});
+ gltf.scene.traverse(o=>{if(o.isMesh){meshes++;triangles+=(o.geometry.index?.count||o.geometry.attributes.position.count)/3;const key=o.material.uuid;if(!bins.has(key))bins.set(key,{material:o.material,geometries:[]});const g=o.geometry.clone().applyMatrix4(o.matrixWorld);if(!g.attributes.uv)g.setAttribute('uv',new THREE.BufferAttribute(new Float32Array(g.attributes.position.count*2),2));bins.get(key).geometries.push(g);o.material.envMapIntensity=.3;if(o.material.emissiveIntensity>1)o.material.emissiveIntensity=.65;}});
  if(parent)for(const {material,geometries} of bins.values()){
   const geometry=mergeGeometries(geometries,false);
   if(!geometry)throw new Error('Cannot combine model geometry: '+path);
@@ -124,7 +124,7 @@ function processEvents(){for(const event of game.drainEvents()){
  syncUI();
 }}
 function setView(position,target){rig.position.set(0,0,0);rig.rotation.set(0,0,0);camera.position.copy(position);camera.lookAt(target);camera.updateMatrixWorld(true)}
-const homePosition=new THREE.Vector3(3.45,1.95,2.6),homeTarget=new THREE.Vector3(-1.3,1.6,-2.8);
+const homePosition=new THREE.Vector3(2.4,1.75,1.1),homeTarget=new THREE.Vector3(-1.0,1.4,-2.7);
 setView(homePosition,homeTarget);
 function home(){bank();mode='home';game.paused=false;arcade.visible=true;arena.visible=false;document.body.classList.remove('in-game');$('#hud').hidden=true;$('#instruction').hidden=true;$('#play-hint').hidden=true;$('#tour-controls').hidden=true;$('#home').hidden=false;$('#vignette').hidden=false;setView(homePosition,homeTarget);keys.clear();}
 function startGame(){
