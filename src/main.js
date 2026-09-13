@@ -137,7 +137,7 @@ setView(homePosition,homeTarget);
 function home(){bank();mode='home';game.paused=false;arcade.visible=true;arena.visible=false;document.body.classList.remove('in-game');$('#hud').hidden=true;$('#instruction').hidden=true;$('#play-hint').hidden=true;$('#tour-controls').hidden=true;$('#home').hidden=false;$('#vignette').hidden=false;setView(homePosition,homeTarget);keys.clear();}
 function startGame(){
  if(!ready)return;
- mode='game';banked=false;game.restart();intro=true;arcade.visible=false;arena.visible=true;document.body.classList.add('in-game');$('#hud').hidden=false;$('#tour-controls').hidden=true;$('#play-hint').hidden=false;
+ mode='game';banked=false;game.restart();game.reachAssist=renderer.xr.isPresenting;intro=true;arcade.visible=false;arena.visible=true;document.body.classList.add('in-game');$('#hud').hidden=false;$('#tour-controls').hidden=true;$('#play-hint').hidden=false;
  if(renderer.xr.isPresenting){rig.position.set(0,0,.6);rig.rotation.set(0,0,0);camera.position.set(0,0,0)}
  else setView(new THREE.Vector3(0,2.45,5.3),new THREE.Vector3(0,2.2,-5));
  paddle.position.set(0,1.7,.35);pointerValid=false;keys.clear();processEvents();syncUI();$('#world').focus({preventScroll:true});

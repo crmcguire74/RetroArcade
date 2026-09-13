@@ -9,7 +9,7 @@ export class Brickstorm {
     this.level = 0; this.score = 0; this.lives = 4; this.hits = 0;
     this.events = []; this.ball = new Vector3(0, 1.7, 0);
     this.velocity = new Vector3(); this.paused = false;
-    this.finished = false; this.won = false; this.power = ''; this.powerTime = 0;
+    this.finished = false; this.won = false; this.reachAssist = false; this.power = ''; this.powerTime = 0;
     this.loadLevel();
   }
   loadLevel() {
@@ -61,7 +61,7 @@ export class Brickstorm {
         if(this.ball[axis] < lo) { this.ball[axis]=lo; this.velocity[axis]=Math.abs(this.velocity[axis]); }
         if(this.ball[axis] > hi) { this.ball[axis]=hi; this.velocity[axis]=-Math.abs(this.velocity[axis]); }
       }
-      if(this.ball.z < -7.3) { this.ball.z=-7.3; this.velocity.z=Math.abs(this.velocity.z); }
+      if(this.ball.z < -7.3) { this.ball.z=-7.3; this.velocity.z=Math.abs(this.velocity.z); this.assistReturn(); }
       for(const p of paddles) {
         const q=p.quaternion || identity, inverse=q.clone().invert();
         const a=previous.clone().sub(p.position).applyQuaternion(inverse);
@@ -80,7 +80,7 @@ export class Brickstorm {
           if(Math.abs(previous.x-b.x)>=.365) this.velocity.x*=-1;
           else if(Math.abs(previous.y-b.y)>=.31) this.velocity.y*=-1;
           else this.velocity.z*=-1;
-          this.ball.copy(previous);
+          this.ball.copy(previous);this.assistReturn();
           if(--b.hp<=0) this.breakBlock(b);
           else this.events.push({type:'armor',id:b.id});
           break;
@@ -93,6 +93,12 @@ export class Brickstorm {
       }
       if(this.clearTime) return;
     }
+  }
+  assistReturn() {
+    // Keep returning VR shots inside a standing player's reach; outward shots remain physical.
+    if(!this.reachAssist || this.velocity.z <= 0) return;
+    const target=new Vector3(clamp(this.ball.x*.25,-.8,.8),clamp(1.35+(this.ball.y-2)*.22,.95,1.95),.35);
+    this.velocity.copy(target).sub(this.ball).normalize().multiplyScalar(this.speed);
   }
   breakBlock(b) {
     this.blocks=this.blocks.filter(block=>block!==b); this.score+=100; this.hits++;

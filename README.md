@@ -1,48 +1,52 @@
-# After Hours Arcade
+# After Hours Arcade — rebuilt edition
 
-A playable first version of an after-closing 1987 arcade. The room is modeled in Blender and exported as glTF. Its first cabinet opens into **Brickstorm Arena**, a first-person, ten-level brick breaker built with Three.js and WebXR.
+An immersive first-person brick breaker inside a modeled 1987 arcade. This revision replaces the initial prototype’s navigation, paddle mapping, cabinet models, and arena.
 
-## Run
-
-Node.js 22.12+ is recommended for the pinned Vite version.
+## Start playing
 
 ```sh
 npm ci
 npm run dev
 ```
 
-Open the localhost URL printed by Vite. Choose **Brickstorm Arena** for direct play, or **Enter the arcade** to explore. `npm run build` creates the static deployment in `dist/`; `npm run preview` previews it. Deploy `dist/` to an HTTPS static host to use a headset from another device. The LAN HTTP address is suitable for desktop viewing but does not enable immersive WebXR on a remote headset.
+Open the localhost URL. Select **Play Brickstorm**, then **Launch ball**. Move your mouse or finger to move the paddle. No walking, coin insertion, hidden cabinet selection, or headset is required for desktop play.
 
-## Controls
+- Move the paddle under the returning ball. The gold ring shows its projected return position.
+- Hit near paddle edges to angle shots. Destroy the lowest support row to collapse the formation.
+- Gold bonuses give a wider paddle, slow ball, or extra life.
+- Use the visible **Pause / Resume** controls, or Esc. Space serves or resumes. Arrow keys move the paddle too.
+- **Arcade** returns to the home screen and saves the run. **Look around the arcade** offers guided camera views without free-roaming movement.
 
-| Mode | Controls |
-| --- | --- |
-| Arcade, desktop | WASD to move; drag to look; approach the center cabinet and press E; Esc returns to the lobby |
-| Brickstorm, desktop | Mouse / touch moves paddle; click or Space serves; P pauses; Esc banks the run and returns |
-| Arcade, VR | Left stick moves; right stick snap-turns; squeeze near the gold token to hold it; bring it to the coin slot; lean toward the CRT |
-| Brickstorm, VR | Move and tilt controller paddle; trigger serves or resumes; both triggers held two seconds return to arcade |
-| Optional second paddle | Enable in the lobby’s How to play dialog before entering VR |
+There are ten formations, four starting lives, local high scores, earned tickets, and a trophy for clearing all levels. Scores are stored on this browser/device under `afterhours-v1`, not on a global online leaderboard.
 
-Angle shots with paddle-edge hits. Gold bonuses arrive every five destroyed bricks: slow ball, extra life, and wide paddle. Clear the bottom support row to collapse the remaining blocks in slow motion. Clearing all ten levels awards a trophy at the prize counter. Each 100 points earns one ticket. Returning early banks the current run.
+## What was rebuilt
 
-High scores, tickets, and trophy state are **local to this browser/device**, stored under `afterhours-v1`; this is not an online competitive leaderboard. Storage failures fall back to session-only scores. Audio is opt-in through the lobby’s Sound button.
+**Real Blender geometry:** sculpted cabinet profiles, rounded T molding, curved CRT glass, side-panel illustrations, recessed coin mechanisms, screws, speaker vents, detailed buttons, joysticks, stools, a prize counter, fluted walls, and a stepped arena with repeated metal arches. Blender exports the room, arena, and beveled game bricks into GLB files loaded by the application.
 
-## Assets and implementation
+**Generated artwork:** the original Brickstorm illustration is embedded on cabinet side panels and wall posters. A newly generated cosmic panorama is embedded on the Blender arena’s cyclorama. The Blender source files pack their textures. Runtime CRT attract screens animate separately so instructions remain sharp and readable.
 
-- `source/blender/after-hours.blend`: editable Blender room with cabinets, CRTs, controls, signage, carpet, stools, and prize counter.
-- `scripts/model_arcade.py`: deterministic Blender modeling/export script. Rebuild with `Blender -b --python scripts/model_arcade.py` from this folder.
-- `public/assets/arcade.glb`: exported room used by the game. Static geometry is merged by material at runtime for fewer draw calls.
-- `public/assets/brickstorm.png`: original AI-generated cabinet and poster artwork, also used on the portal card.
-- `src/main.js`: rendering, portal, input, game state, effects, physics and WebXR integration.
-- `src/rules.js`: level formations, shot calculations, and defensive saved-data loading.
-- `docs/art-direction.md`: artwork provenance and exact generation prompt.
-- `docs/validation.md`: verification completed and remaining headset checks.
+**Reliable play:** the cursor is projected onto the actual paddle plane. The previous arbitrary screen-to-world mapping, hidden focus pause, and mandatory free-roaming cabinet approach are removed. Pause always exposes a Resume action. The pure game engine is independently tested through all ten levels.
 
-Blender MCP was not exposed in the authoring session. The room was actually generated with the installed Blender 4.5.12 Python interface in background mode. The project does not claim to have used an MCP connection.
+## Blender source and rebuilding
 
-WebXR follows the official [Three.js VR guide](https://threejs.org/manual/en/webxr-basics.html) and [VRButton API](https://threejs.org/docs/pages/VRButton.html). Desktop uses bloom postprocessing; VR renders directly for stereo compatibility and performance. A headset, secure origin, tracked controllers, and compatible WebXR browser are required. No hand-tracking implementation is included.
+- `source/blender/arcade-premium.blend` → `public/assets/arcade-premium.glb`
+- `source/blender/arena-premium.blend` → `public/assets/arena-premium.glb`
+- `source/blender/brick-premium.blend` → `public/assets/brick-premium.glb`
+- `scripts/model_premium.py`: deterministic modeling and export script.
 
-## Checks
+```sh
+/Applications/Blender.app/Contents/MacOS/Blender -b --python scripts/model_premium.py
+```
+
+The older assets remain in the repository for reference; the application loads the three replacement `premium` GLBs. Blender MCP is not exposed in this session, so Blender 4.5.12’s background Python interface produced the models. Runtime geometry is merged by material, preserving embedded artwork textures.
+
+## VR
+
+Use **Play with a VR headset** on a compatible headset browser over HTTPS. Trigger starts the game and serves; move the controller paddle to catch the ball. Optional two-paddle play is available under Controls. Hold both triggers for 1.5 seconds to return. Physical token pickup/insertion remains an optional route at the center cabinet, with direct trigger entry always available. Returning VR shots are assisted into a standing player’s reachable area.
+
+WebXR/controller code is implemented, but real headset comfort, device compatibility, and frame-rate validation remain outstanding. There is no claim of completed headset testing. The ordinary LAN HTTP URL does not enable immersive WebXR on another device; host `dist/` over HTTPS for headset access.
+
+## Build and checks
 
 ```sh
 npm test
@@ -50,4 +54,4 @@ npm run build
 git diff --check
 ```
 
-This is a playable prototype. Ten levels and the win path are implemented; a full ten-level human playthrough and headset performance/comfort validation have not yet been completed. Other cabinets are decorative expansion slots in this version.
+Node 22.12+ is recommended. Vite produces `dist/` for static hosting. See `docs/validation.md` for verification evidence and `docs/art-direction.md` for image-generation provenance and prompts.

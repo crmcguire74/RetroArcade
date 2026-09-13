@@ -45,3 +45,9 @@ test('bonuses are caught and timed effects expire without stacking speed',()=>{
  game.powerTime=.001;game.update(1/120,[p]);assert.equal(game.power,'');assert.ok(Math.abs(game.velocity.length()-4.2)<1e-8);
  game.bonuses.push({id:2,kind:'life',position:p.position.clone()});game.update(1/120,[p]);assert.equal(game.lives,5);
 });
+test('VR return assistance keeps distant shots within standing reach',()=>{
+ const game=new Brickstorm();game.reachAssist=true;game.ball.set(2.8,4,-6);game.velocity.set(1,1,4);game.assistReturn();
+ const seconds=(.35-game.ball.z)/game.velocity.z;
+ const impact=game.ball.clone().addScaledVector(game.velocity,seconds);
+ assert.ok(Math.abs(impact.x)<=.8);assert.ok(impact.y>=.95&&impact.y<=1.95);
+});
