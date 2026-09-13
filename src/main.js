@@ -49,13 +49,22 @@ const nebula=textureLoader.load('/assets/arena-nebula.png');nebula.colorSpace=TH
 const backdrop=new THREE.Mesh(new THREE.PlaneGeometry(72,48),new THREE.MeshBasicMaterial({map:nebula,color:0xb4bccc,fog:false}));
 backdrop.position.set(0,11,-32);arena.add(backdrop);
 // Actual Blender GLBs: retain material identity including the embedded artwork textures.
+
+// Crisp animated CRT attract screens; generated illustrations remain on cabinet sides and wall art.
+const crtCanvas=document.createElement('canvas');crtCanvas.width=512;crtCanvas.height=384;
+const crtContext=crtCanvas.getContext('2d');const crtTexture=new THREE.CanvasTexture(crtCanvas);crtTexture.colorSpace=THREE.SRGBColorSpace;
+const crtMaterial=new THREE.MeshBasicMaterial({map:crtTexture,color:0xc2f4ec});
+function drawCRT(time){const c=crtContext;c.fillStyle='#02161e';c.fillRect(0,0,512,384);c.textAlign='center';c.fillStyle='#e4c27e';c.font='bold 34px monospace';c.fillText('BRICKSTORM',256,49);for(let r=0;r<4;r++)for(let j=0;j<9;j++){c.fillStyle=['#57b3aa','#627ebe','#b06ba7','#d6a46b'][r];c.fillRect(59+j*44,85+r*26,37,17)}const x=256+Math.sin(time)*150;c.fillStyle='#89dbd3';c.fillRect(x-35,285,70,8);c.fillStyle='#ffedb8';c.fillRect(256+Math.sin(time*1.4)*160,205+Math.cos(time*1.1)*58,7,7);c.font='14px monospace';c.fillStyle='#abbfae';c.fillText('PRESS START  /  1 PLAYER',256,351);c.fillStyle='#0002';for(let y=0;y<384;y+=3)c.fillRect(0,y,512,1);crtTexture.needsUpdate=true;}
+drawCRT(0);
+const terrazzoCanvas=document.createElement('canvas');terrazzoCanvas.width=512;terrazzoCanvas.height=512;const tc=terrazzoCanvas.getContext('2d');tc.fillStyle='#24383c';tc.fillRect(0,0,512,512);let seed=1987;function rnd(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296}for(let i=0;i<16000;i++){const v=rnd();tc.fillStyle=v<.1?'#797462':v<.45?'#3b4b4b':'#1a2d32';tc.fillRect(rnd()*512,rnd()*512,.7+rnd()*2,.7+rnd()*2)}const terrazzoTexture=new THREE.CanvasTexture(terrazzoCanvas);terrazzoTexture.colorSpace=THREE.SRGBColorSpace;terrazzoTexture.wrapS=terrazzoTexture.wrapT=THREE.RepeatWrapping;terrazzoTexture.repeat.set(8,8);
+
 const loader=new GLTFLoader();
 let ready=false,brickAsset=null;
 const assetReport=[];
 async function loadModel(path,parent){
  const gltf=await loader.loadAsync(path);gltf.scene.updateMatrixWorld(true);
  const bins=new Map();let meshes=0,triangles=0;
- gltf.scene.traverse(o=>{if(o.isMesh){meshes++;triangles+=(o.geometry.index?.count||o.geometry.attributes.position.count)/3;const key=o.material.uuid;if(!bins.has(key))bins.set(key,{material:o.material,geometries:[]});const g=o.geometry.clone().applyMatrix4(o.matrixWorld);if(!g.attributes.uv)g.setAttribute('uv',new THREE.BufferAttribute(new Float32Array(g.attributes.position.count*2),2));bins.get(key).geometries.push(g);o.material.envMapIntensity=.3;if(o.material.emissiveIntensity>1)o.material.emissiveIntensity=.65;}});
+ gltf.scene.traverse(o=>{if(o.isMesh){if(/Convex.*CRT/.test(o.name))o.material=crtMaterial;if(o.material.name==='Deep teal terrazzo'){o.material.map=terrazzoTexture;o.material.color.set(0x7c9696);o.material.roughness=.42;}meshes++;triangles+=(o.geometry.index?.count||o.geometry.attributes.position.count)/3;const key=o.material.uuid;if(!bins.has(key))bins.set(key,{material:o.material,geometries:[]});const g=o.geometry.clone().applyMatrix4(o.matrixWorld);if(!g.attributes.uv)g.setAttribute('uv',new THREE.BufferAttribute(new Float32Array(g.attributes.position.count*2),2));bins.get(key).geometries.push(g);o.material.envMapIntensity=.3;if(o.material.emissiveIntensity>1)o.material.emissiveIntensity=.65;}});
  if(parent)for(const {material,geometries} of bins.values()){
   const geometry=mergeGeometries(geometries,false);
   if(!geometry)throw new Error('Cannot combine model geometry: '+path);
@@ -64,7 +73,7 @@ async function loadModel(path,parent){
  assetReport.push({path,meshes,triangles});return gltf.scene;
 }
 Promise.all([loadModel('/assets/arcade-premium.glb',arcade),loadModel('/assets/arena-premium.glb',arena),loadModel('/assets/brick-premium.glb')]).then(([, ,asset])=>{
- brickAsset=asset;ready=true;$('#play').disabled=false;$('#play-label').textContent='Play Brickstorm';$('#load-note').textContent='Mouse or touch · No headset needed';
+ brickAsset=new THREE.Group();const propBins=new Map();asset.updateMatrixWorld(true);asset.traverse(o=>{if(o.isMesh){const key=o.material.uuid;if(!propBins.has(key))propBins.set(key,{name:o.name,material:o.material,geometries:[]});propBins.get(key).geometries.push(o.geometry.clone().applyMatrix4(o.matrixWorld));}});for(const b of propBins.values()){const m=new THREE.Mesh(mergeGeometries(b.geometries),b.material);m.name=b.name;brickAsset.add(m);}ready=true;$('#play').disabled=false;$('#play-label').textContent='Play Brickstorm';$('#load-note').textContent='Mouse or touch · No headset needed';
 }).catch(error=>{console.error(error);$('#play-label').textContent='Reload the arcade';$('#play').disabled=false;$('#play').onclick=()=>location.reload();$('#load-note').textContent='A 3D asset did not load. Click to retry.';});
 
 const game=new Brickstorm();
@@ -186,9 +195,10 @@ function xrArcade(){bank();mode='xr-arcade';arcade.visible=true;arena.visible=fa
 $('#vr').onclick=async()=>{if(!ready)return;try{if(!navigator.xr||!await navigator.xr.isSessionSupported('immersive-vr')){dialog('<h2>Play in your headset</h2><p>Open this site in a compatible headset browser over HTTPS, then select Play with a VR headset.</p><p>You can play right here with your mouse using Play Brickstorm.</p>');return}const session=await navigator.xr.requestSession('immersive-vr',{optionalFeatures:['local-floor','bounded-floor']});await renderer.xr.setSession(session);xrArcade()}catch(error){dialog('<h2>VR did not start</h2><p>'+String(error.message).replace(/[<>]/g,'')+'</p><p>You can still select Play Brickstorm for desktop play.</p>')}};
 renderer.xr.addEventListener('sessionend',()=>{home()});
 function haptic(strength){const inputs=renderer.xr.getSession()?.inputSources;if(inputs)for(const source of inputs)source.gamepad?.hapticActuators?.[0]?.pulse(strength,30)?.catch(()=>{})}
-let last=performance.now(),exitHold=0;
+function fold(value,min,max){const length=max-min,phase=((value-min)%(2*length)+2*length)%(2*length);return min+(phase>length?2*length-phase:phase)}
+let last=performance.now(),exitHold=0,crtTick=0;
 renderer.setAnimationLoop(now=>{
- const dt=Math.min(Math.max((now-last)/1000,0),1/30);last=now;
+ const dt=Math.min(Math.max((now-last)/1000,0),1/30);last=now;crtTick+=dt;if(crtTick>.1&&arcade.visible){drawCRT(now/1000);crtTick=0;}
  if(mode==='portal'){
   portalTime+=dt;
   if(portalTime>.3){startGame();$('#transition').style.opacity=0;}
@@ -205,8 +215,8 @@ renderer.setAnimationLoop(now=>{
   const paddles=[paddle,...(secondPaddle.visible?[secondPaddle]:[])];game.update(dt,paddles);processEvents();
   ball.position.copy(game.ball);ballLight.position.copy(game.ball);ball.visible=!game.finished&&!game.clearTime;
   for(let i=trail.length-1;i>0;i--)trail[i].position.copy(trail[i-1].position);trail[0].position.copy(game.ball);trail.forEach(m=>m.visible=game.launched&&!game.paused);
-  aimRing.visible=game.launched&&game.velocity.z>0;
-  if(aimRing.visible){const travel=(.35-game.ball.z)/game.velocity.z;aimRing.position.set(THREE.MathUtils.clamp(game.ball.x+game.velocity.x*travel,-3,3),THREE.MathUtils.clamp(game.ball.y+game.velocity.y*travel,.35,4.6),.30);}
+  aimRing.visible=game.launched&&game.velocity.z>0&&game.ball.z<.2;
+  if(aimRing.visible){const travel=(.35-game.ball.z)/game.velocity.z;aimRing.position.set(fold(game.ball.x+game.velocity.x*travel,-3,3),fold(game.ball.y+game.velocity.y*travel,.35,4.6),.30);}
   for(const b of game.blocks){const mesh=blockMeshes.get(b.id);if(mesh)mesh.position.set(b.x,b.y,b.z)}
   for(const bonus of game.bonuses){if(!bonusMeshes.has(bonus.id)){const m=solid(new THREE.IcosahedronGeometry(.18,1),0xedc78a,.8);arena.add(m);bonusMeshes.set(bonus.id,m)}const m=bonusMeshes.get(bonus.id);m.position.copy(bonus.position);m.rotation.y+=dt*2;}
   for(const [id,m] of bonusMeshes)if(!game.bonuses.some(b=>b.id===id)){arena.remove(m);m.geometry.dispose();m.material.dispose();bonusMeshes.delete(id)}
