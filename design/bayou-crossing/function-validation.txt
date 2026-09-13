@@ -1,9 +1,3 @@
 FAIL: props.json: current official Meshy pricing verification is required
 FAIL: props.json: positive creditsPerTexturedTask is required
 FAIL: props.json: hardCreditCeiling must be positive and no greater than the room credit budget
-FAIL: prop frog: reference image requires explicit approval
-FAIL: prop truck: reference image requires explicit approval
-FAIL: prop log: reference image requires explicit approval
-FAIL: prop turtle: reference image requires explicit approval
-FAIL: Function gate: explicit approval is required
-FAIL: final-report.json: gates.function must be true

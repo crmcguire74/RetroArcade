@@ -34,22 +34,33 @@
     "environment": {}
   },
   "runtimeChecks": {
-    "vlow": false,
-    "textureTiers": false,
+    "vlow": true,
+    "textureTiers": true,
     "lightmap": false,
-    "lightingManifest": false,
-    "performance": false,
-    "browserCapture": "",
+    "lightingManifest": true,
+    "performance": true,
+    "browserCapture": "Inline CUA screenshots in the task conversation, September 13 2026",
     "errors": []
   },
   "postmortem": {
-    "observations": [],
-    "corrections": [],
+    "observations": [
+      "Two cabinets load; Bayou start/hop/pause/resume/return and score persistence verified in browser.",
+      "23 tests pass; legal-input route replay wins all 3 rounds.",
+      "Native Blender models and built-in generated artwork are integrated."
+    ],
+    "corrections": [
+      "Safe initial traffic phase",
+      "Explicit start and pause UI",
+      "Debounced VR stick",
+      "Camera includes the full frog",
+      "Baked normal detail and reduced texture tiers",
+      "Windshield placed outside cab surface"
+    ],
     "remainingRisks": [
-      "Runtime integration and hardware verification pending.",
-      "Blender MCP tools unavailable in this session.",
-      "game-dev executable not installed or available on PATH.",
-      "Bundled room validator requires a positive Meshy spend ceiling and accepted Meshy jobs, even for Blender-only authoring. Do not fabricate pricing or paid task receipts."
+      "Physical WebXR headset comfort and performance untested.",
+      "No public deployment performed.",
+      "Real-time lights approximate Blender area fixtures; no baked lightmap.",
+      "Game Development Studio CLI and Blender MCP unavailable; user approved direct Blender route."
     ]
   },
   "proposedLessons": []

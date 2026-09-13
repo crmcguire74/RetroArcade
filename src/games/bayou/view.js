@@ -24,9 +24,9 @@ function batch(group,capacity,parent){
 }
 export class BayouView{
  constructor(){this.root=new THREE.Group();this.root.visible=false;this.loaded=false;this.facing=0;this.movers={};this.report=[];this.waterTime={value:0};}
- async load(){
+ async load({low=matchMedia('(pointer:coarse)').matches}={}){
   const loader=new GLTFLoader();
-  const fetchModel=async name=>{const path=`/assets/bayou/${name}.glb`;const g=await loader.loadAsync(path);let triangles=0,meshes=0;g.scene.traverse(o=>{if(o.isMesh){meshes++;triangles+=(o.geometry.index?.count||o.geometry.attributes.position.count)/3}});this.report.push({path,meshes,triangles});return combine(g.scene)};
+  const fetchModel=async name=>{const path=`/assets/bayou/${name}${low?'-vlow':''}.glb`;const g=await loader.loadAsync(path);let triangles=0,meshes=0;g.scene.traverse(o=>{if(o.isMesh){meshes++;triangles+=(o.geometry.index?.count||o.geometry.attributes.position.count)/3}});this.report.push({path,meshes,triangles});return combine(g.scene)};
   const [world,frog,truck,log,turtle]=await Promise.all(['world','frog','truck','log','turtle'].map(fetchModel));
   world.traverse(o=>{if(!o.isMesh)return;const m=o.material;
    if(m.name==='Generated distant bayou panorama'){o.material=new THREE.MeshBasicMaterial({map:m.map,color:0xaab6c0,fog:false,side:THREE.DoubleSide});o.castShadow=false;}
@@ -35,16 +35,18 @@ export class BayouView{
      shader.vertexShader='varying vec3 vBayouPos;\n'+shader.vertexShader;
      shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvBayouPos = position;');
      shader.fragmentShader='uniform float bayouTime; varying vec3 vBayouPos;\n'+shader.fragmentShader;
-     shader.fragmentShader=shader.fragmentShader.replace('#include <normal_fragment_maps>','#include <normal_fragment_maps>\nnormal = normalize(normal + vec3(sin(vBayouPos.x*11.0+bayouTime)*0.13, cos(vBayouPos.z*14.0-bayouTime*1.2)*0.08,0.0));');
-    };m.customProgramCacheKey=()=> 'bayou-water-v1';m.roughness=.24;
+     shader.fragmentShader=shader.fragmentShader.replace('#include <normal_fragment_maps>','#include <normal_fragment_maps>\nnormal = normalize(normal + vec3(sin(vBayouPos.x*2.0+vBayouPos.z*11.0+bayouTime*.7)*0.022, cos(vBayouPos.z*17.0+sin(vBayouPos.x)-bayouTime)*0.008,0.0));');
+    };m.customProgramCacheKey=()=> 'bayou-water-v1';m.roughness=.3;m.metalness=.15;
    }
-   m.envMapIntensity=.65;
+   m.envMapIntensity=m.name==='Moonlit river'?.03:m.name==='Wet asphalt'?.12:.45;
   });
   this.root.add(world,frog);this.frog=frog;
   this.movers.truck=batch(truck,45,this.root);this.movers.log=batch(log,27,this.root);this.movers.turtle=batch(turtle,54,this.root);
   const hemi=new THREE.HemisphereLight(0x9daecb,0x25361b,1.1);this.root.add(hemi);
-  const moon=new THREE.DirectionalLight(0x9ec3ef,2.1);moon.position.set(3,11,-8);moon.target.position.set(0,0,-8);moon.castShadow=true;moon.shadow.mapSize.set(1024,1024);moon.shadow.camera.left=-10;moon.shadow.camera.right=10;moon.shadow.camera.top=12;moon.shadow.camera.bottom=-12;moon.shadow.bias=-.0006;this.root.add(moon,moon.target);
-  for(const [x,y,z,c,power] of [[-3,5,1,0xf5c180,30],[3,4,-11,0x93bcbc,30]]){const light=new THREE.PointLight(c,power,20,2);light.position.set(x,y,z);this.root.add(light)}
+  const response=await fetch('/assets/bayou/lighting.json');if(!response.ok)throw Error('Bayou lighting did not load');const lighting=await response.json();
+  for(const fixture of lighting.fixtures){const f=fixture.runtime;const light=f.type==='directional'?new THREE.DirectionalLight(f.colorHex,f.intensity):new THREE.PointLight(f.colorHex,f.intensity,f.distance,2);const [x,y,z]=fixture.position;light.position.set(x,z,-y);this.root.add(light);
+   if(f.type==='directional'){const [tx,ty,tz]=fixture.target;light.target.position.set(tx,tz,-ty);light.castShadow=true;light.shadow.mapSize.set(1024,1024);light.shadow.camera.left=-10;light.shadow.camera.right=10;light.shadow.camera.top=12;light.shadow.camera.bottom=-12;light.shadow.bias=-.0006;this.root.add(light.target)}
+  }
   this.homes=HOME_COLUMNS.map((x,i)=>{
    const marker=new THREE.Mesh(new THREE.TorusGeometry(.44,.022,6,32),new THREE.MeshBasicMaterial({color:0xe7d6a2,transparent:true,opacity:.4}));marker.rotation.x=Math.PI/2;marker.position.set(x*CELL,.24,-12*CELL);this.root.add(marker);return marker;
   });
@@ -53,6 +55,7 @@ export class BayouView{
   this.label=new THREE.Mesh(new THREE.PlaneGeometry(4,.9),new THREE.MeshBasicMaterial({map:this.labelTexture,transparent:true,depthWrite:false,side:THREE.DoubleSide}));this.root.add(this.label);
   this.loaded=true;return this.report;
  }
+ sceneTriangles(){let total=0;this.root.traverseVisible(o=>{if(o.isMesh)total+=((o.geometry.index?.count||o.geometry.attributes.position.count)/3)*(o.isInstancedMesh?o.count:1)});return total;}
  labelText(text){if(text===this.lastText)return;this.lastText=text;const c=this.labelContext;c.clearRect(0,0,1024,256);c.fillStyle='#071c15dd';c.fillRect(0,0,1024,256);c.fillStyle='#e8efd6';c.textAlign='center';c.font='500 35px sans-serif';text.split('\n').forEach((line,i)=>c.fillText(line,512,65+i*64));this.labelTexture.needsUpdate=true;}
  hop(dx,dy){this.facing=Math.atan2(-dx,dy);}
  update(game,dt,{firstPerson=false,xr=false}={}){
@@ -65,7 +68,7 @@ export class BayouView{
   const trucks=[],logs=[],turtles=[];
   for(const lane of LANES){for(const obj of laneObjects(lane,game.time,game.round)){
    if(Math.abs(obj.x)>8.8)continue;
-   if(lane.type==='road')trucks.push({x:obj.x,y:.045,z:-lane.row*CELL,sx:obj.length/2.8,rotation:lane.speed<0?Math.PI:0});
+   if(lane.type==='road')trucks.push({x:obj.x,y:.025,z:-lane.row*CELL,sx:obj.length/2.92,sz:.82,rotation:lane.speed<0?Math.PI:0});
    else if(lane.type==='log')logs.push({x:obj.x,y:0,z:-lane.row*CELL,sx:obj.length/3.1});
    else for(let j=-1;j<=1;j++)turtles.push({x:obj.x+j*obj.length*.30,y:obj.submerged?-.48:obj.warning?Math.sin(game.time*13)*.035:0,z:-lane.row*CELL,sx:obj.length/3,sz:.85});
   }}

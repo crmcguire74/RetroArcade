@@ -21,7 +21,7 @@ renderer.setSize(innerWidth,innerHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
 renderer.xr.enabled=true;
 renderer.shadowMap.enabled=true;
-renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.shadowMap.type=THREE.PCFShadowMap;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure=.9;
 const scene=new THREE.Scene();
@@ -32,6 +32,7 @@ const environment=pmrem.fromScene(new RoomEnvironment(),.05);
 scene.environment=environment.texture;scene.environmentIntensity=.35;
 const camera=new THREE.PerspectiveCamera(52,innerWidth/innerHeight,.05,100);
 const rig=new THREE.Group();rig.add(camera);scene.add(rig);
+const comfortFade=new THREE.Mesh(new THREE.PlaneGeometry(2,2),new THREE.MeshBasicMaterial({color:0x020807,transparent:true,opacity:0,depthTest:false,depthWrite:false}));comfortFade.position.z=-.10;comfortFade.renderOrder=9999;comfortFade.visible=false;camera.add(comfortFade);
 const arcade=new THREE.Group(),arena=new THREE.Group();scene.add(arcade,arena);arena.visible=false;
 const bayouView=new BayouView();scene.add(bayouView.root);const bayouCabinet=new THREE.Group();bayouCabinet.position.set(2.3,0,-4.05);bayouCabinet.rotation.y=-.1;arcade.add(bayouCabinet);
 scene.add(new THREE.HemisphereLight(0x9baec2,0x101820,.6));
@@ -86,7 +87,8 @@ const crossing=new BayouCrossing(),stickHops=new StickHops(),arcadeStick=new Sti
 let selectedGame='brickstorm',portalGame='brickstorm',bayouReady=false,bayouBanked=true,frogEye=false;
 let bayouSave;try{bayouSave=readBayouSave(localStorage)}catch{bayouSave={scores:[],trophy:false}}
 const bayouTrophy=new THREE.Group();bayouTrophy.position.set(-3.2,1.6,2.5);bayouTrophy.scale.setScalar(.4);arcade.add(bayouTrophy);
-Promise.all([bayouView.load(),loadModel('/assets/bayou/cabinet.glb',bayouCabinet)]).then(([report])=>{
+Promise.all([bayouView.load(),loadModel('/assets/bayou/cabinet.glb',bayouCabinet)]).then(async ([report])=>{
+ const preparation=new THREE.Scene();preparation.environment=scene.environment;preparation.environmentIntensity=scene.environmentIntensity;preparation.fog=new THREE.Fog('#0c1922',20,75);for(const light of scene.children.filter(o=>o.isLight))preparation.add(light.clone());bayouView.root.visible=true;preparation.add(bayouView.root);bayouView.update(crossing,0);await renderer.compileAsync(preparation,camera);bayouView.root.visible=false;scene.add(bayouView.root);
  assetReport.push(...report);$('#world').dataset.assets=JSON.stringify(assetReport);bayouReady=true;refreshSelection();
  const prize=bayouView.frog.clone(true);prize.traverse(o=>{if(o.isMesh)o.material=new THREE.MeshStandardMaterial({color:0xd5b56c,metalness:.8,roughness:.26})});bayouTrophy.add(prize);bayouTrophy.visible=bayouSave.trophy;
 }).catch(error=>{console.error(error);$('#select-bayou').dataset.failed='true';if(selectedGame==='bayou'){$('#load-note').textContent='Bayou assets did not load. Reload to retry.';}});
@@ -101,14 +103,15 @@ function selectGame(id){selectedGame=id;refreshSelection();}
 $('#select-brickstorm').onclick=()=>selectGame('brickstorm');$('#select-bayou').onclick=()=>selectGame('bayou');
 function bankBayou(){if(bayouBanked)return;bayouBanked=true;bayouSave=recordBayouRun(bayouSave,crossing);try{localStorage.setItem(SAVE_KEY,JSON.stringify(bayouSave))}catch{notify('Score saved for this session only')}bayouTrophy.visible=bayouSave.trophy;}
 function startBayou(){
- if(!bayouReady)return;mode='bayou';crossing.restart();bayouBanked=false;arcade.visible=false;arena.visible=false;bayouView.root.visible=true;scene.background.set('#0c1922');scene.fog=new THREE.Fog('#0c1922',20,75);document.body.classList.add('in-game','in-bayou');$('#hud').hidden=false;$('#tour-controls').hidden=true;$('#play-hint').hidden=false;$('#bayou-controls').hidden=false;
+ if(!bayouReady)return;mode='bayou';syncBayouUI.last='';crossing.restart();bayouBanked=false;arcade.visible=false;arena.visible=false;bayouView.root.visible=true;scene.background.set('#0c1922');scene.fog=new THREE.Fog('#0c1922',20,75);document.body.classList.add('in-game','in-bayou');$('#hud').hidden=false;$('#tour-controls').hidden=true;$('#play-hint').hidden=false;$('#bayou-controls').hidden=false;
  keys.clear();stickHops.reset();bayouView.facing=0;setView(new THREE.Vector3(0,7.8,6.4),new THREE.Vector3(0,0,-4.6));
  if(renderer.xr.isPresenting){rig.position.set(0,-1,0);rig.rotation.set(0,0,0);camera.position.set(0,0,0)}
  updateBayou(0);syncBayouUI();$('#world').focus({preventScroll:true});
 }
 function bayouHop(dx,dy){if(crossing.hopDirection(dx,dy)){bayouView.hop(dx,dy);sound(340,.06,.025);haptic(.08);return true}return false}
 function syncBayouUI(){
- $('#hud-title').textContent='BAYOU CROSSING';$('#level').textContent=`Round ${crossing.round+1} / 3 · ${Math.ceil(crossing.timer)}s`;$('#score').textContent=String(crossing.score).padStart(6,'0');$('#lives').textContent='● '.repeat(crossing.lives).trim();$('#stat-label').textContent='Homes';$('#bricks').textContent=crossing.homes.length+'/5';$('#pause').textContent=crossing.paused?'Resume':'Pause';
+ const signature=[crossing.started,crossing.finished,crossing.paused,crossing.won,crossing.round,Math.ceil(crossing.timer),crossing.score,crossing.lives,crossing.homes.length,crossing.roundDelay>0,crossing.recovery>0,renderer.xr.isPresenting].join(':');if(syncBayouUI.last===signature)return;syncBayouUI.last=signature;
+ $('#hud-title').textContent='BAYOU CROSSING';$('#level').textContent=`Round ${crossing.round+1}/3 · ${crossing.homes.length}/5 home · ${Math.ceil(crossing.timer)}s`;$('#score').textContent=String(crossing.score).padStart(6,'0');$('#lives').textContent='● '.repeat(crossing.lives).trim();$('#stat-label').textContent='Homes';$('#bricks').textContent=crossing.homes.length+'/5';$('#pause').textContent=crossing.paused?'Resume':'Pause';
  $('#instruction').hidden=renderer.xr.isPresenting||crossing.started&&!crossing.paused&&!crossing.finished;$('#bayou-controls').hidden=renderer.xr.isPresenting;
  $('#instruction-kicker').textContent=crossing.finished?(crossing.won?'ALL FIVE HOME, THREE TIMES':'RUN COMPLETE'):crossing.paused?'TAKE YOUR TIME':'YOUR FIRST CROSSING';
  $('#instruction-title').textContent=crossing.finished?(crossing.won?'Home before morning.':'Another crossing?'):crossing.paused?'Game paused.':'One hop at a time.';
@@ -131,6 +134,7 @@ function updateBayou(dt){
   if(e.type==='win'||e.type==='lose')bankBayou();
  }
  const xr=renderer.xr.isPresenting;bayouView.update(crossing,dt,{firstPerson:frogEye||xr,xr});
+ comfortFade.visible=xr&&!!crossing.hop;comfortFade.material.opacity=crossing.hop?Math.sin(Math.min(1,crossing.hop.elapsed/.18)*Math.PI)*.72:0;
  const p=crossing.visualFrog;
  if(xr){const eyeY=camera.position.y||1.6;rig.position.set(p.x,.8-eyeY,-p.row*CELL);rig.rotation.set(0,0,0);}
  else if(frogEye){setView(new THREE.Vector3(p.x,.8,-p.row*CELL+.05),new THREE.Vector3(p.x,.8,-p.row*CELL-5));}
@@ -198,7 +202,7 @@ function processEvents(){for(const event of game.drainEvents()){
 function setView(position,target){rig.position.set(0,0,0);rig.rotation.set(0,0,0);camera.position.copy(position);camera.lookAt(target);camera.updateMatrixWorld(true)}
 const homePosition=new THREE.Vector3(2.4,1.75,1.1),homeTarget=new THREE.Vector3(-1.0,1.4,-2.7);
 setView(homePosition,homeTarget);
-function home(){if(mode==='bayou')bankBayou();bank();bayouView.root.visible=false;$('#bayou-controls').hidden=true;document.body.classList.remove('in-bayou');scene.background.set('#080e16');scene.fog=new THREE.Fog('#080e16',16,50);$('#power').textContent='';mode='home';game.paused=false;arcade.visible=true;arena.visible=false;document.body.classList.remove('in-game');$('#hud').hidden=true;$('#instruction').hidden=true;$('#play-hint').hidden=true;$('#tour-controls').hidden=true;$('#home').hidden=false;$('#vignette').hidden=false;setView(homePosition,homeTarget);keys.clear();}
+function home(){comfortFade.visible=false;$('#message').style.opacity=0;if(mode==='bayou')bankBayou();bank();bayouView.root.visible=false;$('#bayou-controls').hidden=true;document.body.classList.remove('in-bayou');scene.background.set('#080e16');scene.fog=new THREE.Fog('#080e16',16,50);$('#power').textContent='';mode='home';game.paused=false;arcade.visible=true;arena.visible=false;document.body.classList.remove('in-game');$('#hud').hidden=true;$('#instruction').hidden=true;$('#play-hint').hidden=true;$('#tour-controls').hidden=true;$('#home').hidden=false;$('#vignette').hidden=false;setView(homePosition,homeTarget);keys.clear();}
 function startGame(){
  if(portalGame==='bayou'){startBayou();return}
  if(!ready)return;bayouView.root.visible=false;$('#bayou-controls').hidden=true;document.body.classList.remove('in-bayou');scene.background.set('#080e16');scene.fog=new THREE.Fog('#080e16',16,50);$('#hud-title').textContent='BRICKSTORM';$('#stat-label').textContent='Bricks';$('#hint-action').textContent='Move mouse to catch the ball';$('#hint-secondary').textContent='Space to serve · Esc to pause';
@@ -256,14 +260,14 @@ for(let i=0;i<2;i++){
  controller.addEventListener('squeezeend',()=>{if(token.parent===controller){arcade.attach(token);token.position.set(.23,1.18,-2.15);token.userData.held=false;}});
 }
 const token=solid(new THREE.CylinderGeometry(.045,.045,.012,32),0xe0b87a,.25);token.rotation.x=Math.PI/2;token.position.set(.23,1.18,-2.15);arcade.add(token);
-function xrArcade(){if(mode==='bayou')bankBayou();bayouView.root.visible=false;$('#bayou-controls').hidden=true;document.body.classList.remove('in-bayou');scene.background.set('#080e16');scene.fog=new THREE.Fog('#080e16',16,50);cabinetLabel('BRICKSTORM\nTRIGGER TO PLAY');bayouCabinetLabel('BAYOU CROSSING\nTRIGGER TO PLAY');bank();mode='xr-arcade';arcade.visible=true;arena.visible=false;rig.position.set(selectedGame==='bayou'?2.3:0,0,selectedGame==='bayou'?-2.5:-1.25);rig.rotation.set(0,0,0);camera.position.set(0,0,0);$('#instruction').hidden=true;$('#hud').hidden=true;$('#play-hint').hidden=true;document.body.classList.add('in-game');}
+function xrArcade(){comfortFade.visible=false;if(mode==='bayou')bankBayou();bayouView.root.visible=false;$('#bayou-controls').hidden=true;document.body.classList.remove('in-bayou');scene.background.set('#080e16');scene.fog=new THREE.Fog('#080e16',16,50);cabinetLabel('BRICKSTORM\nTRIGGER TO PLAY');bayouCabinetLabel('BAYOU CROSSING\nTRIGGER TO PLAY');bank();mode='xr-arcade';arcade.visible=true;arena.visible=false;rig.position.set(selectedGame==='bayou'?2.3:0,0,selectedGame==='bayou'?-2.5:-1.25);rig.rotation.set(0,0,0);camera.position.set(0,0,0);$('#instruction').hidden=true;$('#hud').hidden=true;$('#play-hint').hidden=true;document.body.classList.add('in-game');}
 $('#vr').onclick=async()=>{if(!ready)return;try{if(!navigator.xr||!await navigator.xr.isSessionSupported('immersive-vr')){dialog('<h2>Play in your headset</h2><p>Open this site in a compatible headset browser over HTTPS, then select Play with a VR headset.</p><p>You can play right here with your mouse using Play Brickstorm.</p>');return}const session=await navigator.xr.requestSession('immersive-vr',{optionalFeatures:['local-floor','bounded-floor']});await renderer.xr.setSession(session);xrArcade()}catch(error){dialog('<h2>VR did not start</h2><p>'+String(error.message).replace(/[<>]/g,'')+'</p><p>You can still select Play Brickstorm for desktop play.</p>')}};
 renderer.xr.addEventListener('sessionend',()=>{home()});
 function haptic(strength){const inputs=renderer.xr.getSession()?.inputSources;if(inputs)for(const source of inputs)source.gamepad?.hapticActuators?.[0]?.pulse(strength,30)?.catch(()=>{})}
 function fold(value,min,max){const length=max-min,phase=((value-min)%(2*length)+2*length)%(2*length);return min+(phase>length?2*length-phase:phase)}
-let last=performance.now(),exitHold=0,crtTick=0;
+let last=performance.now(),exitHold=0,crtTick=0,performanceTime=0,frameCount=0;renderer.info.autoReset=false;
 renderer.setAnimationLoop(now=>{
- const dt=Math.min(Math.max((now-last)/1000,0),1/30);last=now;crtTick+=dt;if(crtTick>.1&&arcade.visible){drawCRT(now/1000);crtTick=0;}
+ const rawDt=Math.max((now-last)/1000,0),dt=Math.min(rawDt,.1);last=now;performanceTime+=rawDt;frameCount++;crtTick+=dt;if(crtTick>.1&&arcade.visible){drawCRT(now/1000);crtTick=0;}
  if(mode==='portal'){
   portalTime+=dt;
   if(portalTime>.3){startGame();$('#transition').style.opacity=0;}
@@ -293,7 +297,7 @@ renderer.setAnimationLoop(now=>{
  if(renderer.xr.isPresenting){const inputs=renderer.xr.getSession().inputSources;let pressed=0;for(const source of inputs)if(source.gamepad?.buttons[0]?.pressed)pressed++;exitHold=pressed===2?exitHold+dt:0;if(exitHold>1.5){exitHold=0;xrArcade()}}
  for(let i=fragments.length-1;i>=0;i--){const f=fragments[i];if(game.paused&&mode==='game')continue;f.userData.life-=dt;f.position.addScaledVector(f.userData.velocity,dt*(f.userData.slow?.4:1));f.userData.velocity.y-=dt*(f.userData.slow?1.4:3);f.rotation.x+=dt*.6;f.rotation.z+=dt*.35;if(f.userData.life<=0){arena.remove(f);fragments.splice(i,1)}}
  trophy.rotation.y+=dt*.3;
- $('#world').dataset.mode=mode;if(renderer.xr.isPresenting)renderer.render(scene,camera);else composer.render();
+ $('#world').dataset.mode=mode;renderer.info.reset();if(renderer.xr.isPresenting)renderer.render(scene,camera);else composer.render();if(performanceTime>=1){$('#world').dataset.performance=JSON.stringify({fps:Math.round(frameCount/performanceTime),drawCalls:renderer.info.render.calls,renderedTriangles:renderer.info.render.triangles,sceneTriangles:mode==='bayou'?bayouView.sceneTriangles():null,mode});performanceTime=0;frameCount=0;}
 });
 window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);composer.setSize(innerWidth,innerHeight)});
 // Read-only verification report. No gameplay bypasses are exposed.

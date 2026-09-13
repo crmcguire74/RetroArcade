@@ -1,0 +1,8 @@
+{
+  "verifiedGLBs": 15,
+  "hashes": "all match",
+  "lowTierBytes": 6195064,
+  "worstSampledSceneTriangles": 214137,
+  "triangleBudget": 250000,
+  "sampling": "All 3 rounds; 120 seconds per round at 0.1-second intervals; includes visible instanced props and five home rings; excludes repeated shadow/postprocess draw work"
+}

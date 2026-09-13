@@ -25,5 +25,7 @@
   "environmentObjects": 799,
   "source": "model_bayou.py",
   "referenceApproval": "explicit user approval in conversation",
-  "exported": false
+  "exported": true,
+  "exportManifest": "../runtime/asset-manifest.json",
+  "note": "Counts here describe original authored props; runtime tiers use reduced geometry. Blender-only route explicitly approved."
 }
