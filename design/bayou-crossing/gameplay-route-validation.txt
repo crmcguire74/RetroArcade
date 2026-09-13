@@ -1,0 +1,22 @@
+Round 1, home 0: 19 input beats, score 464
+Round 1, home -2: 19 input beats, score 926
+Round 1, home 2: 24 input beats, score 1386
+Round 1, home -4: 49 input beats, score 1836
+Round 1, home 4: 26 input beats, score 3294
+Round 2, home 0: 22 input beats, score 3756
+Round 2, home -2: 18 input beats, score 4218
+Round 2, home 2: 26 input beats, score 4676
+Round 2, home -4: 19 input beats, score 5138
+Round 2, home 4: 23 input beats, score 7598
+Round 3, home 0: 17 input beats, score 8062
+Round 3, home -2: 25 input beats, score 8520
+Round 3, home 2: 18 input beats, score 8982
+Round 3, home -4: 28 input beats, score 9440
+Round 3, home 4: 18 input beats, score 12902
+{
+  "won": true,
+  "lives": 3,
+  "score": 12902,
+  "hops": 289,
+  "branches": 69215
+}
