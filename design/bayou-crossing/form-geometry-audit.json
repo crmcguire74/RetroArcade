@@ -1,0 +1,112 @@
+{
+  "layoutParity": {
+    "frog-player": true,
+    "truck-1": true,
+    "truck-2": true,
+    "truck-3": true,
+    "truck-4": true,
+    "truck-5": true,
+    "log-7-0": true,
+    "log-7-1": true,
+    "log-7-2": true,
+    "log-9-0": true,
+    "log-9-1": true,
+    "log-9-2": true,
+    "log-11-0": true,
+    "log-11-1": true,
+    "log-11-2": true,
+    "turtle-8-0-0": true,
+    "turtle-8-0-1": true,
+    "turtle-8-0-2": true,
+    "turtle-8-1-0": true,
+    "turtle-8-1-1": true,
+    "turtle-8-1-2": true,
+    "turtle-8-2-0": true,
+    "turtle-8-2-1": true,
+    "turtle-8-2-2": true,
+    "turtle-10-0-0": true,
+    "turtle-10-0-1": true,
+    "turtle-10-0-2": true,
+    "turtle-10-1-0": true,
+    "turtle-10-1-1": true,
+    "turtle-10-1-2": true,
+    "turtle-10-2-0": true,
+    "turtle-10-2-1": true,
+    "turtle-10-2-2": true
+  },
+  "substrate": {
+    "terrain": {
+      "nonManifoldEdges": 0,
+      "dimensions": [
+        22.0,
+        25.0,
+        0.6000000238418579
+      ]
+    },
+    "left-berm": {
+      "nonManifoldEdges": 0,
+      "dimensions": [
+        0.6000000238418579,
+        18.0,
+        0.4000000059604645
+      ]
+    },
+    "right-berm": {
+      "nonManifoldEdges": 0,
+      "dimensions": [
+        0.6000000238418579,
+        18.0,
+        0.4000000059604645
+      ]
+    },
+    "Five-lane road": {
+      "nonManifoldEdges": 0,
+      "dimensions": [
+        15.0,
+        6.5,
+        0.09000000357627869
+      ]
+    },
+    "Moonlit river surface": {
+      "nonManifoldEdges": 0,
+      "dimensions": [
+        15.0,
+        6.5,
+        0.10000000149011612
+      ]
+    }
+  },
+  "assetDimensionsBlenderXYZ": {
+    "FROG": [
+      0.7572590708732605,
+      1.0149999260902405,
+      0.5099999373778701
+    ],
+    "TRUCK": [
+      2.919999837875366,
+      1.4100000858306885,
+      1.3250000178813934
+    ],
+    "LOG": [
+      3.1540000438690186,
+      0.7596397399902344,
+      0.993108481168747
+    ],
+    "TURTLE": [
+      1.1597869396209717,
+      1.2545841336250305,
+      0.43347370624542236
+    ]
+  },
+  "errors": [],
+  "exceptions": [
+    "Open air: no roof, doors, windows, columns or seating. Associated checks are not applicable.",
+    "Foliage blades, petals and eye highlights intentionally use thin decorative surfaces; closed manifold requirement applies to the terrain substrate.",
+    "Distant image cyclorama intentionally outside playable terrain bounds.",
+    "Frog and vehicle instance heights adjusted to ground their contact surfaces.",
+    "Blender-only production approved by user; no accepted Meshy task receipts exist."
+  ],
+  "humanFormApproval": "pending",
+  "nativeSource": "meshes/bayou-world.blend",
+  "proceduralNormalDetail": "Blender procedural micro-normal shading must be baked or recreated for runtime; it does not survive GLB automatically."
+}

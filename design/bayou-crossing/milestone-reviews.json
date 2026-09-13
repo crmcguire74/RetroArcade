@@ -19,9 +19,19 @@
     "status": "pending",
     "approvedBy": "",
     "approvedAt": "",
-    "evidence": [],
-    "strangestElement": "",
-    "notes": ""
+    "evidence": [
+      "form-review.html",
+      "form-geometry-audit.json",
+      "renders/production-view.png",
+      "renders/frog-eye.png",
+      "renders/cabinet.png",
+      "renders/asset-frog.png",
+      "renders/asset-truck.png",
+      "renders/asset-log.png",
+      "renders/asset-turtle.png"
+    ],
+    "strangestElement": "A frog-height road view intentionally makes nearby pickup trucks tower over the player; the elevated desktop view is the default for route readability.",
+    "notes": "Native Blender models and packed generated images exist. Geometry audit has no errors. Human visual approval pending. No runtime export has occurred."
   },
   "runtime": {
     "status": "pending",
