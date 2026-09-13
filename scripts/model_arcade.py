@@ -58,5 +58,5 @@ for x in [-4.3,2.8,5.8]:
  bpy.ops.mesh.primitive_cylinder_add(vertices=20,radius=.28,depth=.13,location=(x,3.75,.65)); bpy.context.object.data.materials.append(wall)
  box('Stool stem',(x,3.75,.33),(.08,.08,.6),chrome)
 base=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-bpy.ops.wm.save_as_mainfile(filepath=os.path.join(base,'public/assets/after-hours.blend'))
+bpy.ops.wm.save_as_mainfile(filepath=os.path.join(base,'source/blender/after-hours.blend'))
 bpy.ops.export_scene.gltf(filepath=os.path.join(base,'public/assets/arcade.glb'),export_format='GLB',export_yup=True)
