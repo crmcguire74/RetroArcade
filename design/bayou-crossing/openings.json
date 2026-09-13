@@ -1,6 +1,9 @@
 {
   "schema": "game-room.opening-schedule.v1",
   "roomId": "bayou-crossing",
-  "primaryArrival": {"openingId": "", "exception": ""},
+  "primaryArrival": {
+    "openingId": "",
+    "exception": "Direct spatial cabinet transition to an open-air safe bank, 3.4 m wide and 1.3 m deep. No architectural doorway, cut wall, or roof is present."
+  },
   "openings": []
 }

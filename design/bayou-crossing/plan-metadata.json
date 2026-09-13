@@ -3,9 +3,87 @@
   "roomId": "bayou-crossing",
   "style": "monochrome-engineering",
   "projectionSource": "actual-meshes",
-  "layers": ["lower-room", "reflected-ceiling"],
+  "layers": [
+    "lower-room",
+    "reflected-ceiling"
+  ],
   "semanticLabelsOutsideImage": true,
   "aiInspirationIncluded": false,
   "aiInspirationReason": "",
-  "coverage": []
+  "coverage": [
+    "room-outline",
+    "cutouts",
+    "openings",
+    "exterior-apron",
+    "main-sign",
+    "ingress-props",
+    "floor-markers",
+    "barriers",
+    "columns",
+    "circulation",
+    "placed-features"
+  ],
+  "notes": {
+    "cutouts": "None; no structural openings proposed",
+    "openings": "Direct portal arrival exception; no roof or wall",
+    "main-sign": "Cabinet marquee in existing right-hand arcade bay; not inside outdoor course",
+    "columns": "Boundary bollards and roadside lamp supports only",
+    "ceiling": "Open sky; reflected layer contains lamp booms only",
+    "source": "plans/provenance.json",
+    "coordinateConversion": "Engineering Blender +Y lane progression maps to runtime -Z"
+  },
+  "rows": [
+    {
+      "row": 0,
+      "purpose": "start bank"
+    },
+    {
+      "row": 1,
+      "purpose": "traffic"
+    },
+    {
+      "row": 2,
+      "purpose": "traffic"
+    },
+    {
+      "row": 3,
+      "purpose": "traffic"
+    },
+    {
+      "row": 4,
+      "purpose": "traffic"
+    },
+    {
+      "row": 5,
+      "purpose": "traffic"
+    },
+    {
+      "row": 6,
+      "purpose": "safe median"
+    },
+    {
+      "row": 7,
+      "purpose": "river platforms"
+    },
+    {
+      "row": 8,
+      "purpose": "river platforms"
+    },
+    {
+      "row": 9,
+      "purpose": "river platforms"
+    },
+    {
+      "row": 10,
+      "purpose": "river platforms"
+    },
+    {
+      "row": 11,
+      "purpose": "river platforms"
+    },
+    {
+      "row": 12,
+      "purpose": "five lily homes"
+    }
+  ]
 }

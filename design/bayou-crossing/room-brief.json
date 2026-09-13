@@ -2,15 +2,86 @@
   "schema": "game-room.room-brief.v1",
   "roomId": "bayou-crossing",
   "family": "gameplay-room",
-  "purpose": "",
-  "runtimeSurface": "",
-  "boundsMeters": [0, 0, 0],
-  "hero": {"id": "", "role": "", "reservedBoundsMeters": [0, 0, 0]},
-  "symmetry": {"mode": "none", "order": 1, "appliesTo": [], "exceptions": []},
-  "circulation": {"description": "", "minimumClearanceMeters": 0},
-  "productionCamera": {"viewport": [0, 0], "location": [0, 0, 0], "target": [0, 0, 0], "verticalFovDegrees": 0},
-  "performanceBudget": {"maxSceneTriangles": 0, "maxVLowBytes": 0, "maxHighTextureBytes": 0},
-  "creditBudget": {"maximumCredits": 0, "approvalRequired": true},
-  "environment": {"type": "none", "identity": "", "source": "", "assignmentKey": ""},
-  "artifacts": {"floorPlan": "", "reflectedCeilingPlan": "", "planMetadata": "plan-metadata.json", "wallElevations": [], "visualTarget": "", "openingContactSheet": ""}
+  "purpose": "Second playable arcade cabinet: Frogger-inspired road and river crossing with five homes and three escalating rounds.",
+  "runtimeSurface": "Existing Three.js/Vite arcade; desktop elevated follow camera with optional frog-eye view; WebXR frog-eye camera.",
+  "boundsMeters": [
+    22,
+    8,
+    25
+  ],
+  "hero": {
+    "id": "frog",
+    "role": "Playable frog with an unobscured landing area and readable next lane",
+    "reservedBoundsMeters": [
+      1.3,
+      1.5,
+      1.3
+    ]
+  },
+  "symmetry": {
+    "mode": "bilateral",
+    "order": 2,
+    "appliesTo": [
+      "architecture",
+      "barriers",
+      "circulation",
+      "repeatedProps"
+    ],
+    "exceptions": [
+      "Moving traffic and floating platforms deliberately have asymmetric phases and directions.",
+      "Organic bank vegetation varies within symmetric placement envelopes.",
+      "Arcade cabinet occupies the right VECTOR bay; Brickstorm remains in the central bay."
+    ]
+  },
+  "circulation": {
+    "description": "Direct cabinet entry onto a 3.4 m wide safe bank. Thirteen discrete rows: start, five traffic lanes, safe median, five river lanes, five home pads. Continuous side berms contain play.",
+    "minimumClearanceMeters": 1.3
+  },
+  "productionCamera": {
+    "viewport": [
+      1280,
+      720
+    ],
+    "location": [
+      0,
+      6,
+      5
+    ],
+    "target": [
+      0,
+      0,
+      -6
+    ],
+    "verticalFovDegrees": 52
+  },
+  "performanceBudget": {
+    "maxSceneTriangles": 250000,
+    "maxVLowBytes": 8000000,
+    "maxHighTextureBytes": 16000000
+  },
+  "creditBudget": {
+    "maximumCredits": 0,
+    "approvalRequired": true
+  },
+  "environment": {
+    "type": "none",
+    "identity": "",
+    "source": "",
+    "assignmentKey": ""
+  },
+  "artifacts": {
+    "floorPlan": "plans/lower-room.png",
+    "reflectedCeilingPlan": "plans/reflected-ceiling.png",
+    "planMetadata": "plan-metadata.json",
+    "wallElevations": [
+      "plans/side-elevation.png"
+    ],
+    "visualTarget": "plans/visual-target.png",
+    "openingContactSheet": "masks/opening-schedule.html"
+  },
+  "functionalExceptions": [
+    "Outdoor gameplay area: terrain substrate has thickness, but no roof or enclosing walls are proposed. Side berms provide explicit collision containment.",
+    "Arrival is a cabinet portal to a visible open bank, not a decorative architectural doorway.",
+    "Use Blender-authored geometry and built-in generated references; do not submit to a paid image-to-3D provider. This exception is pending user review."
+  ]
 }

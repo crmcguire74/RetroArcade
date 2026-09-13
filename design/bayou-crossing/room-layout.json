@@ -2,7 +2,366 @@
   "schema": "game-room.layout.v1",
   "roomId": "bayou-crossing",
   "units": "meters",
-  "surfaces": [],
-  "instances": [],
-  "productionCamera": {"location": [0, 0, 0], "target": [0, 0, 0], "verticalFovDegrees": 60}
+  "surfaces": [
+    {
+      "id": "terrain",
+      "type": "ground",
+      "center": [
+        0,
+        -0.35,
+        -7.8
+      ],
+      "dimensions": [
+        22,
+        0.6,
+        25
+      ]
+    },
+    {
+      "id": "left-berm",
+      "type": "boundary",
+      "center": [
+        -7.8,
+        0.18,
+        -7.8
+      ],
+      "dimensions": [
+        0.6,
+        0.4,
+        18
+      ]
+    },
+    {
+      "id": "right-berm",
+      "type": "boundary",
+      "center": [
+        7.8,
+        0.18,
+        -7.8
+      ],
+      "dimensions": [
+        0.6,
+        0.4,
+        18
+      ]
+    }
+  ],
+  "instances": [
+    {
+      "id": "frog-player",
+      "assetId": "frog",
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "truck-1",
+      "assetId": "truck",
+      "position": [
+        1.0999999999999996,
+        0,
+        -1.3
+      ]
+    },
+    {
+      "id": "truck-2",
+      "assetId": "truck",
+      "position": [
+        2.7,
+        0,
+        -2.6
+      ]
+    },
+    {
+      "id": "truck-3",
+      "assetId": "truck",
+      "position": [
+        -3.6999999999999993,
+        0,
+        -3.9000000000000004
+      ]
+    },
+    {
+      "id": "truck-4",
+      "assetId": "truck",
+      "position": [
+        -2.0999999999999996,
+        0,
+        -5.2
+      ]
+    },
+    {
+      "id": "truck-5",
+      "assetId": "truck",
+      "position": [
+        -0.5,
+        0,
+        -6.5
+      ]
+    },
+    {
+      "id": "log-7-0",
+      "assetId": "log",
+      "position": [
+        -5,
+        0.12,
+        -9.1
+      ]
+    },
+    {
+      "id": "log-7-1",
+      "assetId": "log",
+      "position": [
+        0,
+        0.12,
+        -9.1
+      ]
+    },
+    {
+      "id": "log-7-2",
+      "assetId": "log",
+      "position": [
+        5,
+        0.12,
+        -9.1
+      ]
+    },
+    {
+      "id": "log-9-0",
+      "assetId": "log",
+      "position": [
+        -5,
+        0.12,
+        -11.700000000000001
+      ]
+    },
+    {
+      "id": "log-9-1",
+      "assetId": "log",
+      "position": [
+        0,
+        0.12,
+        -11.700000000000001
+      ]
+    },
+    {
+      "id": "log-9-2",
+      "assetId": "log",
+      "position": [
+        5,
+        0.12,
+        -11.700000000000001
+      ]
+    },
+    {
+      "id": "log-11-0",
+      "assetId": "log",
+      "position": [
+        -5,
+        0.12,
+        -14.3
+      ]
+    },
+    {
+      "id": "log-11-1",
+      "assetId": "log",
+      "position": [
+        0,
+        0.12,
+        -14.3
+      ]
+    },
+    {
+      "id": "log-11-2",
+      "assetId": "log",
+      "position": [
+        5,
+        0.12,
+        -14.3
+      ]
+    },
+    {
+      "id": "turtle-8-0-0",
+      "assetId": "turtle",
+      "position": [
+        -5.75,
+        0.12,
+        -10.4
+      ]
+    },
+    {
+      "id": "turtle-8-0-1",
+      "assetId": "turtle",
+      "position": [
+        -5,
+        0.12,
+        -10.4
+      ]
+    },
+    {
+      "id": "turtle-8-0-2",
+      "assetId": "turtle",
+      "position": [
+        -4.25,
+        0.12,
+        -10.4
+      ]
+    },
+    {
+      "id": "turtle-8-1-0",
+      "assetId": "turtle",
+      "position": [
+        -0.75,
+        0.12,
+        -10.4
+      ]
+    },
+    {
+      "id": "turtle-8-1-1",
+      "assetId": "turtle",
+      "position": [
+        0,
+        0.12,
+        -10.4
+      ]
+    },
+    {
+      "id": "turtle-8-1-2",
+      "assetId": "turtle",
+      "position": [
+        0.75,
+        0.12,
+        -10.4
+      ]
+    },
+    {
+      "id": "turtle-8-2-0",
+      "assetId": "turtle",
+      "position": [
+        4.25,
+        0.12,
+        -10.4
+      ]
+    },
+    {
+      "id": "turtle-8-2-1",
+      "assetId": "turtle",
+      "position": [
+        5,
+        0.12,
+        -10.4
+      ]
+    },
+    {
+      "id": "turtle-8-2-2",
+      "assetId": "turtle",
+      "position": [
+        5.75,
+        0.12,
+        -10.4
+      ]
+    },
+    {
+      "id": "turtle-10-0-0",
+      "assetId": "turtle",
+      "position": [
+        -5.75,
+        0.12,
+        -13.0
+      ]
+    },
+    {
+      "id": "turtle-10-0-1",
+      "assetId": "turtle",
+      "position": [
+        -5,
+        0.12,
+        -13.0
+      ]
+    },
+    {
+      "id": "turtle-10-0-2",
+      "assetId": "turtle",
+      "position": [
+        -4.25,
+        0.12,
+        -13.0
+      ]
+    },
+    {
+      "id": "turtle-10-1-0",
+      "assetId": "turtle",
+      "position": [
+        -0.75,
+        0.12,
+        -13.0
+      ]
+    },
+    {
+      "id": "turtle-10-1-1",
+      "assetId": "turtle",
+      "position": [
+        0,
+        0.12,
+        -13.0
+      ]
+    },
+    {
+      "id": "turtle-10-1-2",
+      "assetId": "turtle",
+      "position": [
+        0.75,
+        0.12,
+        -13.0
+      ]
+    },
+    {
+      "id": "turtle-10-2-0",
+      "assetId": "turtle",
+      "position": [
+        4.25,
+        0.12,
+        -13.0
+      ]
+    },
+    {
+      "id": "turtle-10-2-1",
+      "assetId": "turtle",
+      "position": [
+        5,
+        0.12,
+        -13.0
+      ]
+    },
+    {
+      "id": "turtle-10-2-2",
+      "assetId": "turtle",
+      "position": [
+        5.75,
+        0.12,
+        -13.0
+      ]
+    }
+  ],
+  "productionCamera": {
+    "viewport": [
+      1280,
+      720
+    ],
+    "location": [
+      0,
+      6,
+      5
+    ],
+    "target": [
+      0,
+      0,
+      -6
+    ],
+    "verticalFovDegrees": 52
+  },
+  "sourceStudy": "meshes/layout-study.blend",
+  "runtimeLaneSpecification": "../../src/games/bayou/engine.js"
 }

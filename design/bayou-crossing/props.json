@@ -6,9 +6,137 @@
     "apiModel": "meshy-5",
     "pricingSource": "https://docs.meshy.ai/en/api/pricing",
     "pricingVerifiedAt": "",
-    "creditsPerTexturedTask": 15,
+    "creditsPerTexturedTask": null,
     "hardCreditCeiling": 0,
-    "maxChargedAttemptsPerAsset": 2
+    "maxChargedAttemptsPerAsset": 2,
+    "enabled": false
   },
-  "assets": []
+  "assets": [
+    {
+      "id": "frog",
+      "function": "Player hero",
+      "description": "Jade tree frog with four articulated limbs, amber eyes and webbed toes.",
+      "class": "hero",
+      "dimensionsMeters": [
+        0.7,
+        0.5,
+        0.8
+      ],
+      "attachmentFace": "floor",
+      "semanticFront": "negative-z",
+      "targetPolycount": 16000,
+      "intendedInstances": 1,
+      "rejectionCriteria": [
+        "Cropped or incomplete silhouette",
+        "Unclear or fused support and contact geometry",
+        "Primary visual shape does not match the approved reference",
+        "Target polygon budget exceeded by more than 20 percent"
+      ],
+      "image": {
+        "prompt": "Use case: stylized-concept. Asset type: mesh-ready reference for a detailed Blender-modeled playable frog in a modern immersive Frogger recreation. One original small green tree frog, full uncropped body, low three-quarter front view, symmetric crouched ready-to-hop pose, four clearly separated limbs with anatomically plausible joints and individually readable webbed toes, broad toe pads planted on the ground, softly translucent jade green wet skin with tiny pebbled pores, creamy pale throat, amber irises and deep glossy black pupils, subtle golden freckles, expressive and endearing without clothing or cartoon accessories. Premium animated-feature creature design with physically believable materials. Plain warm gray studio background, even soft studio lighting, gentle contact shadow, neutral perspective, clear silhouette and depth, no scenery, no leaves, no rocks, no people, no neighboring objects, no text, no watermark, no floating or fused limbs.",
+        "generator": "built-in image_gen",
+        "source": "images/frog.png",
+        "approved": false,
+        "approvedBy": ""
+      },
+      "attempts": [],
+      "acceptedMesh": null
+    },
+    {
+      "id": "truck",
+      "function": "Moving collision hazard",
+      "description": "Teal pickup with separate wheels, cab, bed, lamps, glass and trim.",
+      "class": "reusable",
+      "dimensionsMeters": [
+        2.8,
+        1.5,
+        1.05
+      ],
+      "attachmentFace": "floor",
+      "semanticFront": "positive-x",
+      "targetPolycount": 10000,
+      "intendedInstances": 5,
+      "rejectionCriteria": [
+        "Cropped or incomplete silhouette",
+        "Unclear or fused support and contact geometry",
+        "Primary visual shape does not match the approved reference",
+        "Target polygon budget exceeded by more than 20 percent"
+      ],
+      "image": {
+        "prompt": "Use case: stylized-concept. Asset type: mesh-ready reference for a Blender-modeled moving road obstacle in a premium immersive arcade crossing game. One original compact late-1980s pickup truck, full uncropped body, front-left three-quarter studio view showing an open cargo bed, four separately modeled road tires with tread, teal painted metal bodywork, softly rounded manufactured panels with crisp seams, cream roof, amber indicator lenses and headlights, black rubber window gaskets, windshield and side glass, visible mirrors, bumpers, door handles, tasteful light rain droplets and restrained age wear. Believable wheelbase and grounded construction, premium animated feature art direction, neutral perspective, even studio illumination, plain warm gray backdrop and small contact shadow. No driver, no cargo, no people, no other objects, no scenery, no brands, no text, no watermarks, no cropped parts, no floating pieces.",
+        "generator": "built-in image_gen",
+        "source": "images/truck.png",
+        "approved": false,
+        "approvedBy": ""
+      },
+      "attempts": [],
+      "acceptedMesh": null
+    },
+    {
+      "id": "log",
+      "function": "Rideable river platform",
+      "description": "Cypress log with bark ridges, end grain and stable riding surface.",
+      "class": "reusable",
+      "dimensionsMeters": [
+        3.1,
+        0.76,
+        0.76
+      ],
+      "attachmentFace": "freestanding",
+      "semanticFront": "positive-x",
+      "targetPolycount": 5000,
+      "intendedInstances": 9,
+      "rejectionCriteria": [
+        "Cropped or incomplete silhouette",
+        "Unclear or fused support and contact geometry",
+        "Primary visual shape does not match the approved reference",
+        "Target polygon budget exceeded by more than 20 percent"
+      ],
+      "image": {
+        "prompt": "Use case: stylized-concept. Asset type: mesh-ready reference for a modular rideable river log in a detailed Blender immersive arcade crossing game. One single long naturally weathered cypress log lying horizontally, whole uncropped silhouette in a three-quarter elevated studio view, approximate dimensions 3 meters long by 0.9 meters wide, broad stable flattened upper bark surface for a frog to ride, beautifully layered deeply ridged damp bark, visible concentric end grain at one broken end, restrained soft emerald moss patches on the top edge, one small broken branch nub tightly integrated near an end, dark water-worn lower half. Premium realistic stylized game prop, readable structure and material detail, neutral perspective and even soft studio lighting, plain warm gray background and gentle contact shadow. No water, no plants beyond attached moss, no frog, no scenery, no neighboring logs, no text, no watermark, no crop, no impossible floating parts.",
+        "generator": "built-in image_gen",
+        "source": "images/log.png",
+        "approved": false,
+        "approvedBy": ""
+      },
+      "attempts": [],
+      "acceptedMesh": null
+    },
+    {
+      "id": "turtle",
+      "function": "Rideable periodic diving platform",
+      "description": "Olive shell with scutes, separate head and webbed legs.",
+      "class": "reusable",
+      "dimensionsMeters": [
+        0.9,
+        0.45,
+        1.0
+      ],
+      "attachmentFace": "freestanding",
+      "semanticFront": "negative-z",
+      "targetPolycount": 6500,
+      "intendedInstances": 18,
+      "rejectionCriteria": [
+        "Cropped or incomplete silhouette",
+        "Unclear or fused support and contact geometry",
+        "Primary visual shape does not match the approved reference",
+        "Target polygon budget exceeded by more than 20 percent"
+      ],
+      "image": {
+        "prompt": "Use case: stylized-concept. Asset type: mesh-ready reference for a Blender-modeled rideable turtle in a modern immersive Frogger river game. One original broad-shelled river turtle, full uncropped silhouette, three-quarter front elevated studio view, broad domed stable olive green shell with distinct hexagonal scutes and fine natural ridges, small inquisitive head extended forward, four separately readable short webbed legs, tiny tail, damp mossy green skin, warm ochre shell edge, believable anatomical construction, polished animated-feature realism and restrained fine detail. The shell is approximately one meter wide at game scale and must read as a safe platform. Even soft studio lighting, neutral perspective, plain warm gray background, subtle contact shadow. No water, no rocks, no frogs, no other turtles, no scenery, no text, no watermark, no cropped or floating parts.",
+        "generator": "built-in image_gen",
+        "source": "images/turtle.png",
+        "approved": false,
+        "approvedBy": ""
+      },
+      "attempts": [],
+      "acceptedMesh": null
+    }
+  ],
+  "authoring": {
+    "provider": "local Blender 4.5.12",
+    "mode": "procedural geometry guided by generated references",
+    "status": "proposed; awaiting Function approval",
+    "paidProviderSpend": 0
+  }
 }

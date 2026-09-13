@@ -1,7 +1,34 @@
 {
   "schema": "game-room.milestone-reviews.v1",
   "roomId": "bayou-crossing",
-  "function": {"status": "pending", "approvedBy": "", "approvedAt": "", "evidence": [], "strangestElement": "", "notes": ""},
-  "form": {"status": "pending", "approvedBy": "", "approvedAt": "", "evidence": [], "strangestElement": "", "notes": ""},
-  "runtime": {"status": "pending", "approvedBy": "", "approvedAt": "", "evidence": [], "strangestElement": "", "notes": ""}
+  "function": {
+    "status": "approved",
+    "approvedBy": "user",
+    "approvedAt": "2026-09-13T21:13:41.324702+00:00",
+    "evidence": [
+      "review.html",
+      "plans/lower-room.png",
+      "plans/reflected-ceiling.png",
+      "plans/visual-target.png",
+      "images/contact-sheet.html"
+    ],
+    "strangestElement": "River turtles are deliberately oversized and rideable; their scale is a gameplay promise, not natural-history realism.",
+    "notes": "User explicitly approved layout, all four references, and Blender-only modeling with no paid Meshy generation. This is a user-authorized exception to provider-specific requirements. Raw validator result remains recorded separately."
+  },
+  "form": {
+    "status": "pending",
+    "approvedBy": "",
+    "approvedAt": "",
+    "evidence": [],
+    "strangestElement": "",
+    "notes": ""
+  },
+  "runtime": {
+    "status": "pending",
+    "approvedBy": "",
+    "approvedAt": "",
+    "evidence": [],
+    "strangestElement": "",
+    "notes": ""
+  }
 }

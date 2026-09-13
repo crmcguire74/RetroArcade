@@ -1,10 +1,56 @@
 {
   "schema": "game-room.room-final-report.v1",
   "roomId": "bayou-crossing",
-  "gates": {"function": false, "form": false, "runtime": false},
-  "formChecks": {"floorPlanParity": false, "primaryArrival": false, "symmetry": false, "shell": false, "manifold": false, "booleans": false, "collisions": false, "support": false, "attachmentOrientation": false, "ceilingAttachmentOrientation": false, "seatingOrientation": false, "focalDistribution": false, "heroClearance": false, "colonnades": false, "screenClearance": false, "scale": false, "camera": false, "ceilingCoverage": false, "environmentCoverage": false, "provenance": false},
-  "reviewRenders": {"corners": [], "ceiling": [], "environment": {}},
-  "runtimeChecks": {"vlow": false, "textureTiers": false, "lightmap": false, "lightingManifest": false, "performance": false, "browserCapture": "", "errors": []},
-  "postmortem": {"observations": [], "corrections": [], "remainingRisks": []},
+  "gates": {
+    "function": false,
+    "form": false,
+    "runtime": false
+  },
+  "formChecks": {
+    "floorPlanParity": false,
+    "primaryArrival": false,
+    "symmetry": false,
+    "shell": false,
+    "manifold": false,
+    "booleans": false,
+    "collisions": false,
+    "support": false,
+    "attachmentOrientation": false,
+    "ceilingAttachmentOrientation": false,
+    "seatingOrientation": false,
+    "focalDistribution": false,
+    "heroClearance": false,
+    "colonnades": false,
+    "screenClearance": false,
+    "scale": false,
+    "camera": false,
+    "ceilingCoverage": false,
+    "environmentCoverage": false,
+    "provenance": false
+  },
+  "reviewRenders": {
+    "corners": [],
+    "ceiling": [],
+    "environment": {}
+  },
+  "runtimeChecks": {
+    "vlow": false,
+    "textureTiers": false,
+    "lightmap": false,
+    "lightingManifest": false,
+    "performance": false,
+    "browserCapture": "",
+    "errors": []
+  },
+  "postmortem": {
+    "observations": [],
+    "corrections": [],
+    "remainingRisks": [
+      "Function and Form approvals pending.",
+      "Blender MCP tools unavailable in this session.",
+      "game-dev executable not installed or available on PATH.",
+      "Bundled room validator requires a positive Meshy spend ceiling and accepted Meshy jobs, even for Blender-only authoring. Do not fabricate pricing or paid task receipts."
+    ]
+  },
   "proposedLessons": []
 }
