@@ -52,7 +52,7 @@ backdrop.position.set(0,11,-32);arena.add(backdrop);
 
 // Crisp animated CRT attract screens; generated illustrations remain on cabinet sides and wall art.
 const crtCanvas=document.createElement('canvas');crtCanvas.width=512;crtCanvas.height=384;
-const crtContext=crtCanvas.getContext('2d');const crtTexture=new THREE.CanvasTexture(crtCanvas);crtTexture.colorSpace=THREE.SRGBColorSpace;
+const crtContext=crtCanvas.getContext('2d');const crtTexture=new THREE.CanvasTexture(crtCanvas);crtTexture.colorSpace=THREE.SRGBColorSpace;crtTexture.flipY=false;
 const crtMaterial=new THREE.MeshBasicMaterial({map:crtTexture,color:0xc2f4ec});
 function drawCRT(time){const c=crtContext;c.fillStyle='#02161e';c.fillRect(0,0,512,384);c.textAlign='center';c.fillStyle='#e4c27e';c.font='bold 34px monospace';c.fillText('BRICKSTORM',256,49);for(let r=0;r<4;r++)for(let j=0;j<9;j++){c.fillStyle=['#57b3aa','#627ebe','#b06ba7','#d6a46b'][r];c.fillRect(59+j*44,85+r*26,37,17)}const x=256+Math.sin(time)*150;c.fillStyle='#89dbd3';c.fillRect(x-35,285,70,8);c.fillStyle='#ffedb8';c.fillRect(256+Math.sin(time*1.4)*160,205+Math.cos(time*1.1)*58,7,7);c.font='14px monospace';c.fillStyle='#abbfae';c.fillText('PRESS START  /  1 PLAYER',256,351);c.fillStyle='#0002';for(let y=0;y<384;y+=3)c.fillRect(0,y,512,1);crtTexture.needsUpdate=true;}
 drawCRT(0);
@@ -105,7 +105,7 @@ function makeLabel(parent,w,h,x,y,z){
 }
 const arenaLabel=makeLabel(arena,4.5,.8,0,4.4,-8);
 const prizeLabel=makeLabel(arcade,2.5,.6,-4,2.5,2.5);
-const cabinetLabel=makeLabel(arcade,1.3,.3,0,2.7,-2.7);cabinetLabel('BRICKSTORM\nTRIGGER TO PLAY');
+const cabinetLabel=makeLabel(arcade,1.3,.3,0,2.7,-2.7);cabinetLabel('');
 function updatePrize(){prizeLabel(`${save.tickets} TICKETS\nBEST ${String(save.scores[0]?.score||0).padStart(6,'0')}`)}updatePrize();
 const trophy=solid(new THREE.IcosahedronGeometry(.23,1),0xe9bb78,.3);trophy.position.set(-4,2.05,2.5);arcade.add(trophy);trophy.visible=save.trophy;
 function bank(){if(banked)return;banked=true;if(game.score>0){save.scores.push({score:game.score,level:game.level+1,won:game.won});save.scores.sort((a,b)=>b.score-a.score);save.scores=save.scores.slice(0,10);save.tickets+=Math.floor(game.score/100);save.trophy||=game.won;try{localStorage.setItem('afterhours-v1',JSON.stringify(save))}catch{notify('Score saved for this session only')}updatePrize();trophy.visible=save.trophy}}
@@ -191,7 +191,7 @@ for(let i=0;i<2;i++){
  controller.addEventListener('squeezeend',()=>{if(token.parent===controller){arcade.attach(token);token.position.set(.23,1.18,-2.15);token.userData.held=false;}});
 }
 const token=solid(new THREE.CylinderGeometry(.045,.045,.012,32),0xe0b87a,.25);token.rotation.x=Math.PI/2;token.position.set(.23,1.18,-2.15);arcade.add(token);
-function xrArcade(){bank();mode='xr-arcade';arcade.visible=true;arena.visible=false;rig.position.set(0,0,-1.25);rig.rotation.set(0,0,0);camera.position.set(0,0,0);$('#instruction').hidden=true;$('#hud').hidden=true;$('#play-hint').hidden=true;document.body.classList.add('in-game');}
+function xrArcade(){cabinetLabel('BRICKSTORM\nTRIGGER TO PLAY');bank();mode='xr-arcade';arcade.visible=true;arena.visible=false;rig.position.set(0,0,-1.25);rig.rotation.set(0,0,0);camera.position.set(0,0,0);$('#instruction').hidden=true;$('#hud').hidden=true;$('#play-hint').hidden=true;document.body.classList.add('in-game');}
 $('#vr').onclick=async()=>{if(!ready)return;try{if(!navigator.xr||!await navigator.xr.isSessionSupported('immersive-vr')){dialog('<h2>Play in your headset</h2><p>Open this site in a compatible headset browser over HTTPS, then select Play with a VR headset.</p><p>You can play right here with your mouse using Play Brickstorm.</p>');return}const session=await navigator.xr.requestSession('immersive-vr',{optionalFeatures:['local-floor','bounded-floor']});await renderer.xr.setSession(session);xrArcade()}catch(error){dialog('<h2>VR did not start</h2><p>'+String(error.message).replace(/[<>]/g,'')+'</p><p>You can still select Play Brickstorm for desktop play.</p>')}};
 renderer.xr.addEventListener('sessionend',()=>{home()});
 function haptic(strength){const inputs=renderer.xr.getSession()?.inputSources;if(inputs)for(const source of inputs)source.gamepad?.hapticActuators?.[0]?.pulse(strength,30)?.catch(()=>{})}
