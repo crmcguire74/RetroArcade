@@ -45,9 +45,8 @@ composer.addPass(new RenderPass(scene,camera));
 composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),.12,.25,2.3));
 composer.addPass(new OutputPass());
 const textureLoader=new THREE.TextureLoader();
-const nebula=textureLoader.load('/assets/arena-nebula.png');nebula.colorSpace=THREE.SRGBColorSpace;
-const backdrop=new THREE.Mesh(new THREE.PlaneGeometry(72,48),new THREE.MeshBasicMaterial({map:nebula,color:0xb4bccc,fog:false}));
-backdrop.position.set(0,11,-32);arena.add(backdrop);
+
+// The generated nebula is embedded on a Blender-modeled cyclorama inside arena-premium.glb.
 // Actual Blender GLBs: retain material identity including the embedded artwork textures.
 
 // Crisp animated CRT attract screens; generated illustrations remain on cabinet sides and wall art.
@@ -64,13 +63,13 @@ const assetReport=[];
 async function loadModel(path,parent){
  const gltf=await loader.loadAsync(path);gltf.scene.updateMatrixWorld(true);
  const bins=new Map();let meshes=0,triangles=0;
- gltf.scene.traverse(o=>{if(o.isMesh){if(/Convex.*CRT/.test(o.name))o.material=crtMaterial;if(o.material.name==='Deep teal terrazzo'){o.material.map=terrazzoTexture;o.material.color.set(0x7c9696);o.material.roughness=.42;}meshes++;triangles+=(o.geometry.index?.count||o.geometry.attributes.position.count)/3;const key=o.material.uuid;if(!bins.has(key))bins.set(key,{material:o.material,geometries:[]});const g=o.geometry.clone().applyMatrix4(o.matrixWorld);if(!g.attributes.uv)g.setAttribute('uv',new THREE.BufferAttribute(new Float32Array(g.attributes.position.count*2),2));bins.get(key).geometries.push(g);o.material.envMapIntensity=.3;if(o.material.emissiveIntensity>1)o.material.emissiveIntensity=.65;}});
+ gltf.scene.traverse(o=>{if(o.isMesh){if(/Nebula.*cyclorama/.test(o.name))o.material=new THREE.MeshBasicMaterial({map:o.material.map,color:0xb4bccc,fog:false});if(/Convex.*CRT/.test(o.name))o.material=crtMaterial;if(o.material.name==='Deep teal terrazzo'){o.material.map=terrazzoTexture;o.material.color.set(0x7c9696);o.material.roughness=.42;}meshes++;triangles+=(o.geometry.index?.count||o.geometry.attributes.position.count)/3;const key=o.material.uuid;if(!bins.has(key))bins.set(key,{material:o.material,geometries:[]});const g=o.geometry.clone().applyMatrix4(o.matrixWorld);if(!g.attributes.uv)g.setAttribute('uv',new THREE.BufferAttribute(new Float32Array(g.attributes.position.count*2),2));bins.get(key).geometries.push(g);o.material.envMapIntensity=.3;if(o.material.emissiveIntensity>1)o.material.emissiveIntensity=.65;}});
  if(parent)for(const {material,geometries} of bins.values()){
   const geometry=mergeGeometries(geometries,false);
   if(!geometry)throw new Error('Cannot combine model geometry: '+path);
   const mesh=new THREE.Mesh(geometry,material);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);geometries.forEach(g=>g.dispose());
  }
- assetReport.push({path,meshes,triangles});return gltf.scene;
+ assetReport.push({path,meshes,triangles});$('#world').dataset.assets=JSON.stringify(assetReport);return gltf.scene;
 }
 Promise.all([loadModel('/assets/arcade-premium.glb',arcade),loadModel('/assets/arena-premium.glb',arena),loadModel('/assets/brick-premium.glb')]).then(([, ,asset])=>{
  brickAsset=new THREE.Group();const propBins=new Map();asset.updateMatrixWorld(true);asset.traverse(o=>{if(o.isMesh){const key=o.material.uuid;if(!propBins.has(key))propBins.set(key,{name:o.name,material:o.material,geometries:[]});propBins.get(key).geometries.push(o.geometry.clone().applyMatrix4(o.matrixWorld));}});for(const b of propBins.values()){const m=new THREE.Mesh(mergeGeometries(b.geometries),b.material);m.name=b.name;brickAsset.add(m);}ready=true;$('#play').disabled=false;$('#play-label').textContent='Play Brickstorm';$('#load-note').textContent='Mouse or touch · No headset needed';
@@ -85,9 +84,9 @@ const sharedFragmentGeo=new RoundedBoxGeometry(.16,.12,.15,1,.02);
 const fragmentMaterials=colors.map(c=>new THREE.MeshStandardMaterial({color:c,metalness:.45,roughness:.25,emissive:c,emissiveIntensity:.2}));
 function solid(geometry,color,emission=0){return new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color,metalness:.5,roughness:.24,emissive:color,emissiveIntensity:emission}))}
 function createPaddle(color){
- const group=new THREE.Group();const shell=solid(new RoundedBoxGeometry(1.2,.72,.09,4,.07),0x213a48);group.add(shell);
- const face=solid(new RoundedBoxGeometry(1.1,.61,.015,3,.055),color,.35);face.position.z=-.055;face.material.transparent=true;face.material.opacity=.22;group.add(face);
- const rim=new THREE.LineSegments(new THREE.EdgesGeometry(new RoundedBoxGeometry(1.15,.67,.10,4,.065),25),new THREE.LineBasicMaterial({color}));group.add(rim);
+ const group=new THREE.Group();const shell=solid(new RoundedBoxGeometry(1.2,.72,.09,4,.07),0x213a48);shell.material.transparent=true;shell.material.opacity=.08;shell.material.depthWrite=false;group.add(shell);
+ const face=solid(new RoundedBoxGeometry(1.1,.61,.015,3,.055),color,.35);face.position.z=-.055;face.material.transparent=true;face.material.opacity=.12;face.material.depthWrite=false;group.add(face);
+ const rim=new THREE.LineSegments(new THREE.EdgesGeometry(new RoundedBoxGeometry(1.15,.67,.10,4,.065),25),new THREE.LineBasicMaterial({color}));group.add(rim);for(const y of [-.335,.335]){const bar=solid(new RoundedBoxGeometry(1.12,.035,.10,3,.017),color,1.1);bar.position.y=y;group.add(bar)}for(const x of [-.565,.565]){const bar=solid(new RoundedBoxGeometry(.035,.63,.10,3,.017),color,1.1);bar.position.x=x;group.add(bar)}
  const grip=solid(new RoundedBoxGeometry(.22,.38,.13,3,.025),0x162a34);grip.position.set(0,-.44,0);group.add(grip);
  for(const x of [-.47,.47]){const stud=solid(new THREE.CylinderGeometry(.023,.023,.12,12),0xbe976a);stud.rotation.x=Math.PI/2;stud.position.x=x;group.add(stud)}
  arena.add(group);return group;
@@ -118,7 +117,7 @@ function notify(message){$('#message').textContent=message;$('#message').style.o
 function clearModels(map){for(const mesh of map.values()){arena.remove(mesh);mesh.traverse(o=>{if(o.isMesh&&o.userData.ownedMaterial)o.material.dispose()})}map.clear()}
 function buildBricks(){
  clearModels(blockMeshes);clearModels(bonusMeshes);
- for(const b of game.blocks){const mesh=brickAsset.clone(true);mesh.traverse(o=>{if(o.isMesh){o.material=o.material.clone();o.userData.ownedMaterial=true;if(o.name.startsWith('BRICK_INLAY')){o.material.color.set(colors[b.row]);o.material.emissive.set(colors[b.row]);o.material.emissiveIntensity=.5}else if(o.name.startsWith('BRICK_BODY')){o.material.color.set(colors[b.row]).multiplyScalar(.3);o.material.emissiveIntensity=0;}o.castShadow=false;o.receiveShadow=true}});mesh.position.set(b.x,b.y,b.z);arena.add(mesh);blockMeshes.set(b.id,mesh)}
+ for(const b of game.blocks){const mesh=brickAsset.clone(true);mesh.traverse(o=>{if(o.isMesh){o.material=o.material.clone();o.userData.ownedMaterial=true;if(o.name.startsWith('BRICK_INLAY')){o.material.color.set(colors[b.row]);o.material.emissive.set(colors[b.row]);o.material.emissiveIntensity=.18;o.material.metalness=.4;o.material.roughness=.22;}else if(o.name.startsWith('BRICK_BODY')){o.material.color.set(colors[b.row]).multiplyScalar(.3);o.material.emissiveIntensity=0;}o.castShadow=false;o.receiveShadow=true}});mesh.position.set(b.x,b.y,b.z);arena.add(mesh);blockMeshes.set(b.id,mesh)}
 }
 function fragment(position,row,count=8,slow=false){for(let i=0;i<count;i++){const mesh=new THREE.Mesh(sharedFragmentGeo,fragmentMaterials[row%5]);mesh.position.copy(position);mesh.userData={velocity:new THREE.Vector3((Math.random()-.5)*2,Math.random()*2,(Math.random()-.5)*2),life:slow?2.5:.65,slow};arena.add(mesh);fragments.push(mesh)}}
 function processEvents(){for(const event of game.drainEvents()){
@@ -156,7 +155,7 @@ function syncUI(){
  if(game.finished){$('#instruction-kicker').textContent=game.won?'ALL TEN CLEARED':'RUN COMPLETE';$('#instruction-title').textContent=game.won?'You broke the storm.':'One more game?';$('#instruction-body').textContent=`${game.score.toLocaleString()} points · ${Math.floor(game.score/100)} tickets saved${game.won?' · Trophy earned':''}`;$('#serve').innerHTML='Play again <span>↗</span>'}
  else if(game.paused){$('#instruction-kicker').textContent='TAKE YOUR TIME';$('#instruction-title').textContent='Game paused.';$('#instruction-body').textContent='Your ball is waiting exactly where you left it.';$('#serve').textContent='Resume game'}
  else{$('#instruction-kicker').textContent=intro?'YOUR FIRST SERVE':`LEVEL ${game.level+1} OF 10`;$('#instruction-title').textContent=intro?'Move your paddle.':'Ready for another ball?';$('#instruction-body').innerHTML=intro?'Move your mouse. The paddle follows it.<br>Catch the returning ball and break the wall.':'Aim with your mouse or touch.<br>Break the lowest row to collapse the formation.';$('#serve').innerHTML='Launch ball <span>↗</span>'}
- arenaLabel(`${String(game.score).padStart(6,'0')}     ${game.lives} LIVES\n${game.finished?'TRIGGER TO PLAY AGAIN':game.paused?'PAUSED · TRIGGER TO RESUME':!game.launched?'TRIGGER TO SERVE':LEVEL_NAMES[game.level].toUpperCase()}`);
+ arenaLabel(`${String(game.score).padStart(6,'0')}     ${game.lives} LIVES\n${game.finished?'TRIGGER TO PLAY AGAIN':game.paused?'PAUSED · TRIGGER TO RESUME':!game.launched?(renderer.xr.isPresenting?'TRIGGER TO SERVE':'SPACE TO SERVE'):LEVEL_NAMES[game.level].toUpperCase()}`);
 }
 $('#play').onclick=play;$('#serve').onclick=launch;$('#pause').onclick=pause;$('#leave').onclick=()=>{if(renderer.xr.isPresenting)xrArcade();else home()};
 $('#audio').onclick=()=>{muted=!muted;$('#audio').textContent=muted?'Sound off':'Sound on';$('#audio').setAttribute('aria-pressed',String(!muted));sound()};

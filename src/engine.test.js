@@ -38,3 +38,10 @@ test('all ten levels complete through actual physics with a perfect test paddle'
  assert.equal(game.won,true);assert.equal(levels.size,10);assert.ok(game.score>10000);assert.ok(returns>10);
  console.log(`Ten-level physics run: ${frames} frames, ${returns} paddle returns, ${game.score} points`);
 });
+test('bonuses are caught and timed effects expire without stacking speed',()=>{
+ const game=new Brickstorm(),p=paddle();game.serve(p);
+ game.bonuses.push({id:1,kind:'slow',position:p.position.clone()});game.update(1/120,[p]);
+ assert.equal(game.power,'slow');assert.ok(Math.abs(game.velocity.length()-4.2*.65)<1e-8);
+ game.powerTime=.001;game.update(1/120,[p]);assert.equal(game.power,'');assert.ok(Math.abs(game.velocity.length()-4.2)<1e-8);
+ game.bonuses.push({id:2,kind:'life',position:p.position.clone()});game.update(1/120,[p]);assert.equal(game.lives,5);
+});

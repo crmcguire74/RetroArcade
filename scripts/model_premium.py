@@ -110,7 +110,7 @@ for x in [-2.3,2.3]:
  cyl('Stool base',(x,.05,-2.8),.27,.08,edge);cyl('Stool stem',(x,.4,-2.8),.045,.7,brass);cyl('Upholstered stool',(x,.78,-2.8),.29,.14,rubber)
 
 def export(name):
- bpy.ops.object.select_all(action='SELECT');bpy.ops.object.convert(target='MESH');bpy.ops.wm.save_as_mainfile(filepath=os.path.join(BASE,'source/blender/'+name+'.blend'));bpy.ops.export_scene.gltf(filepath=os.path.join(BASE,'public/assets/'+name+'.glb'),export_format='GLB',export_yup=True)
+ bpy.ops.object.select_all(action='SELECT');bpy.ops.object.convert(target='MESH');bpy.ops.file.pack_all();bpy.ops.wm.save_as_mainfile(filepath=os.path.join(BASE,'source/blender/'+name+'.blend'));bpy.ops.export_scene.gltf(filepath=os.path.join(BASE,'public/assets/'+name+'.glb'),export_format='GLB',export_yup=True)
 export('arcade-premium')
 # Separate modeled arena, designed around the actual paddle collision volume.
 bpy.ops.object.select_all(action='SELECT');bpy.ops.object.delete(use_global=False)
@@ -132,6 +132,8 @@ for side in [-1,1]:
  tube('Gallery guard rail',[(side*5.3,.7,2),(side*5.3,.7,-14)],.035,brass)
 for x in [-2.8,2.8]:
  box('Serve platform marker',(x,.008,.6),(.6,.02,.04),amber,.005)
+nebula_mat=bpy.data.materials.new('Generated cosmic cyclorama');nebula_mat.use_nodes=True;np=nebula_mat.node_tree.nodes.get('Principled BSDF');ni=nebula_mat.node_tree.nodes.new('ShaderNodeTexImage');ni.image=bpy.data.images.load(os.path.join(BASE,'public/assets/arena-nebula.png'));nebula_mat.node_tree.links.new(ni.outputs['Color'],np.inputs['Base Color']);nebula_mat.node_tree.links.new(ni.outputs['Color'],np.inputs['Emission Color']);np.inputs['Emission Strength'].default_value=1
+quad('Nebula cyclorama',[(-36,-13,-32),(36,-13,-32),(36,35,-32),(-36,35,-32)],nebula_mat)
 export('arena-premium')
 # Native Blender modeled brick and controller paddle, exported together as a prop library.
 bpy.ops.object.select_all(action='SELECT');bpy.ops.object.delete(use_global=False)
